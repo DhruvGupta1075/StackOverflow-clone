@@ -155,7 +155,7 @@ export default function Home() {
 
   return (
     <Mainlayout>
-      <main className="min-w-0 p-4 lg:p-6 ">
+      <div className="min-w-0">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h1 className="text-xl lg:text-2xl font-semibold">Top Questions</h1>
           <button
@@ -390,7 +390,7 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </main>
+      </div>
     </Mainlayout>
   );
 }
