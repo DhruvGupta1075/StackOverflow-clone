@@ -11,17 +11,32 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { Signup, loading } = useAuth();
+  const { Signup, SocialLogin, loading } = useAuth();
   const [form, setform] = useState({ name: "", email: "", password: "" });
+
+  useEffect(() => {
+    // Load Google GIS SDK script dynamically
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   const handleChange = (e: any) => {
     setform({ ...form, [e.target.id]: e.target.value });
   };
+
   const handlesubmit = async (e: any) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.password) {
@@ -35,6 +50,41 @@ export default function SignUpPage() {
       console.log(error);
     }
   };
+
+  const handleGoogleLogin = () => {
+    if (!(window as any).google) {
+      toast.error("Google authentication script is still loading. Please try again.");
+      return;
+    }
+
+    try {
+      const client = (window as any).google.accounts.oauth2.initTokenClient({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+        callback: async (tokenResponse: any) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            const success = await SocialLogin("google", tokenResponse.access_token);
+            if (success) {
+              router.push("/");
+            }
+          } else {
+            toast.error("Google authorization failed.");
+          }
+        },
+      });
+      client.requestAccessToken();
+    } catch (err) {
+      console.error("Google login error:", err);
+      toast.error("Google Login initialization failed.");
+    }
+  };
+
+  const handleGithubLogin = () => {
+    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/github-callback`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -62,7 +112,9 @@ export default function SignUpPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Button
+                type="button"
                 variant="outline"
+                onClick={handleGoogleLogin}
                 className="w-full bg-transparent text-sm"
               >
                 <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
@@ -87,7 +139,9 @@ export default function SignUpPage() {
               </Button>
 
               <Button
+                type="button"
                 variant="outline"
+                onClick={handleGithubLogin}
                 className="w-full bg-transparent text-sm"
               >
                 <svg
@@ -170,6 +224,7 @@ export default function SignUpPage() {
 
               <Button
                 type="submit"
+                disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-sm"
               >
                 {loading ? "Signing up.." : "Sign up"}
@@ -177,7 +232,7 @@ export default function SignUpPage() {
 
               <div className="text-center text-sm">
                 Already have an account?{" "}
-                <Link href="/login" className="text-blue-600 hover:underline">
+                <Link href="/auth" className="text-blue-600 hover:underline">
                   Log in
                 </Link>
               </div>

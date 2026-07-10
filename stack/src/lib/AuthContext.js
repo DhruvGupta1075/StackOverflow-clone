@@ -53,6 +53,29 @@ export const AuthProvider = ({ children }) => {
       toast.error(msg);
     }
   };
+  const SocialLogin = async (provider, tokenOrCode) => {
+    setloading(true);
+    seterror(null);
+    try {
+      const endpoint = provider === "google" ? "/user/google-login" : "/user/github-login";
+      const payload = provider === "google" ? { accessToken: tokenOrCode } : { code: tokenOrCode };
+      
+      const res = await axiosInstance.post(endpoint, payload);
+      const { data, token } = res.data;
+      localStorage.setItem("user", JSON.stringify({ ...data, token }));
+      setUser(data);
+      toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Login Successful`);
+      return true;
+    } catch (error) {
+      const msg = error.response?.data?.message || `${provider} Login failed`;
+      seterror(msg);
+      toast.error(msg);
+      return false;
+    } finally {
+      setloading(false);
+    }
+  };
+
   const Logout = () => {
     setUser(null);
     localStorage.removeItem("user");
@@ -60,7 +83,7 @@ export const AuthProvider = ({ children }) => {
   };
   return (
     <AuthContext.Provider
-      value={{ user, Signup, Login, Logout, loading, error }}
+      value={{ user, Signup, Login, Logout, SocialLogin, loading, error }}
     >
       {children}
     </AuthContext.Provider>

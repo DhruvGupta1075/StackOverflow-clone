@@ -165,3 +165,166 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const googleLogin = async (req, res) => {
+  const { idToken, accessToken } = req.body;
+  if (!idToken && !accessToken) {
+    return res.status(400).json({ message: "Google credential token is required" });
+  }
+
+  try {
+    let email, name, googleId;
+
+    if (accessToken) {
+      // Verify via Google userinfo endpoint using accessToken
+      const verifyUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
+      const response = await fetch(verifyUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      
+      if (!response.ok) {
+        return res.status(400).json({ message: "Failed to verify Google Access Token" });
+      }
+
+      const userInfo = await response.json();
+      googleId = userInfo.sub;
+      email = userInfo.email;
+      name = userInfo.name;
+    } else {
+      // Verify Google ID Token
+      const verifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`;
+      const response = await fetch(verifyUrl);
+      
+      if (!response.ok) {
+        return res.status(400).json({ message: "Failed to verify Google ID Token" });
+      }
+
+      const tokenInfo = await response.json();
+      googleId = tokenInfo.sub;
+      email = tokenInfo.email;
+      name = tokenInfo.name;
+    }
+
+    if (!email) {
+      return res.status(400).json({ message: "Google account does not share email" });
+    }
+
+    let existingUser = await user.findOne({ $or: [{ googleId }, { email }] });
+
+    if (existingUser) {
+      // Link Google ID if not already linked
+      if (!existingUser.googleId) {
+        existingUser.googleId = googleId;
+        await existingUser.save();
+      }
+    } else {
+      // Create new user
+      existingUser = await user.create({
+        name,
+        email,
+        googleId,
+        plan: "Free",
+        subscriptionStatus: "inactive",
+      });
+    }
+
+    const token = jwt.sign(
+      { email: existingUser.email, id: existingUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.status(200).json({ data: existingUser, token });
+  } catch (error) {
+    console.error("Error in googleLogin:", error);
+    res.status(500).json({ message: "Something went wrong during Google Login" });
+  }
+};
+
+export const githubLogin = async (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    return res.status(400).json({ message: "GitHub authorization code is required" });
+  }
+
+  try {
+    // Exchange authorization code for GitHub access token
+    const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    if (!accessToken) {
+      return res.status(400).json({ message: "Failed to exchange GitHub authorization code" });
+    }
+
+    // Get GitHub user profile
+    const userResponse = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `token ${accessToken}`,
+      },
+    });
+
+    const githubProfile = await userResponse.json();
+    const githubId = String(githubProfile.id);
+    const name = githubProfile.name || githubProfile.login || "GitHub User";
+
+    // Get GitHub user emails
+    const emailsResponse = await fetch("https://api.github.com/user/emails", {
+      headers: {
+        Authorization: `token ${accessToken}`,
+      },
+    });
+
+    const emailsList = await emailsResponse.json();
+    const primaryEmailObj = Array.isArray(emailsList)
+      ? (emailsList.find((e) => e.primary) || emailsList[0])
+      : null;
+    const email = primaryEmailObj ? primaryEmailObj.email : null;
+
+    if (!email) {
+      return res.status(400).json({ message: "Could not retrieve email from GitHub account" });
+    }
+
+    let existingUser = await user.findOne({ $or: [{ githubId }, { email }] });
+
+    if (existingUser) {
+      // Link GitHub ID if not already linked
+      if (!existingUser.githubId) {
+        existingUser.githubId = githubId;
+        await existingUser.save();
+      }
+    } else {
+      // Create new user
+      existingUser = await user.create({
+        name,
+        email,
+        githubId,
+        plan: "Free",
+        subscriptionStatus: "inactive",
+      });
+    }
+
+    const token = jwt.sign(
+      { email: existingUser.email, id: existingUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.status(200).json({ data: existingUser, token });
+  } catch (error) {
+    console.error("Error in githubLogin:", error);
+    res.status(500).json({ message: "Something went wrong during GitHub Login" });
+  }
+};

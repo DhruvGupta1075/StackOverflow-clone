@@ -3,7 +3,9 @@ import mongoose from "mongoose";
 const userschema = mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
-  password: { type: String, required: true },
+  password: { type: String },
+  googleId: { type: String, default: null },
+  githubId: { type: String, default: null },
   about: { type: String },
   tags: { type: [String] },
   joinDate: { type: Date, default: Date.now },

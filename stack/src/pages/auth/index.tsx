@@ -11,16 +11,31 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
-const index = () => {
+const Index = () => {
   const router = useRouter();
-  const { Login, loading } = useAuth();
+  const { Login, SocialLogin, loading } = useAuth();
   const [form, setform] = useState({ email: "", password: "" });
+
+  useEffect(() => {
+    // Load Google GIS SDK script dynamically
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   const handleChange = (e: any) => {
     setform({ ...form, [e.target.id]: e.target.value });
   };
+
   const handlesubmit = async (e: any) => {
     e.preventDefault();
     if (!form.email || !form.password) {
@@ -34,6 +49,41 @@ const index = () => {
       console.log(error);
     }
   };
+
+  const handleGoogleLogin = () => {
+    if (!(window as any).google) {
+      toast.error("Google authentication script is still loading. Please try again.");
+      return;
+    }
+
+    try {
+      const client = (window as any).google.accounts.oauth2.initTokenClient({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+        callback: async (tokenResponse: any) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            const success = await SocialLogin("google", tokenResponse.access_token);
+            if (success) {
+              router.push("/");
+            }
+          } else {
+            toast.error("Google authorization failed.");
+          }
+        },
+      });
+      client.requestAccessToken();
+    } catch (err) {
+      console.error("Google login error:", err);
+      toast.error("Google Login initialization failed.");
+    }
+  };
+
+  const handleGithubLogin = () => {
+    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/github-callback`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -61,7 +111,9 @@ const index = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <Button
+                type="button"
                 variant="outline"
+                onClick={handleGoogleLogin}
                 className="w-full bg-transparent text-sm"
               >
                 <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
@@ -85,7 +137,9 @@ const index = () => {
                 Log in with Google
               </Button>
               <Button
+                type="button"
                 variant="outline"
+                onClick={handleGithubLogin}
                 className="w-full bg-transparent text-sm"
               >
                 <svg
@@ -137,9 +191,10 @@ const index = () => {
               </div>
               <Button
                 type="submit"
+                disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-sm"
               >
-                {loading ? "loading" : "Log in"}
+                {loading ? "Loading..." : "Log in"}
               </Button>
               <div className="text-center text-sm">
                 <Link href="#" className="text-blue-600 hover:underline">
@@ -160,4 +215,4 @@ const index = () => {
   );
 };
 
-export default index;
+export default Index;
