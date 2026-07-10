@@ -14,6 +14,7 @@ app.get("/", (req, res) => {
   res.send("Stackoverflow clone is running perfect");
 });
 app.use('/user',userroutes)
+app.use('/api/auth',userroutes)
 app.use('/question',questionroute)
 app.use('/answer',answerroutes)
 app.use('/payment',paymentroutes)

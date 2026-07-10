@@ -37,6 +37,7 @@ const userschema = mongoose.Schema({
     ],
     default: []
   },
-  bookmarks: { type: [String], default: [] }
+  bookmarks: { type: [String], default: [] },
+  lastForgotPasswordRequest: { type: Date, default: null }
 });
 export default mongoose.model("user", userschema);
