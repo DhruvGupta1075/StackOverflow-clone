@@ -18,4 +18,20 @@ axiosInstance.interceptors.request.use((req) => {
   }
   return req;
 });
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("user");
+        if (window.location.pathname !== "/auth") {
+          window.location.href = "/auth";
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default axiosInstance;

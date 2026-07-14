@@ -15,10 +15,21 @@ export const Signup = async (req, res) => {
       return res.status(404).json({ message: "User already exist" });
     }
     const hashpassword = await bcrypt.hash(password, 12);
+    let baseUsername = (name || email.split("@")[0]).replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    if (!baseUsername) baseUsername = "user";
+    let username = baseUsername;
+    let existingUsername = await user.findOne({ username });
+    while (existingUsername) {
+      username = `${baseUsername}${Math.floor(1000 + Math.random() * 9000)}`;
+      existingUsername = await user.findOne({ username });
+    }
+    const role = email.toLowerCase().includes("admin") ? "admin" : "user";
     const newuser = await user.create({
       name,
       email,
       password: hashpassword,
+      username,
+      role,
     });
     const token = jwt.sign(
       { email: newuser.email, id: newuser._id },
@@ -223,10 +234,21 @@ export const googleLogin = async (req, res) => {
       }
     } else {
       // Create new user
+      let baseUsername = (name || email.split("@")[0]).replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+      if (!baseUsername) baseUsername = "user";
+      let username = baseUsername;
+      let existingUsername = await user.findOne({ username });
+      while (existingUsername) {
+        username = `${baseUsername}${Math.floor(1000 + Math.random() * 9000)}`;
+        existingUsername = await user.findOne({ username });
+      }
+      const role = email.toLowerCase().includes("admin") ? "admin" : "user";
       existingUser = await user.create({
         name,
         email,
         googleId,
+        username,
+        role,
         plan: "Free",
         subscriptionStatus: "inactive",
       });
@@ -311,10 +333,21 @@ export const githubLogin = async (req, res) => {
       }
     } else {
       // Create new user
+      let baseUsername = (name || email.split("@")[0]).replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+      if (!baseUsername) baseUsername = "user";
+      let username = baseUsername;
+      let existingUsername = await user.findOne({ username });
+      while (existingUsername) {
+        username = `${baseUsername}${Math.floor(1000 + Math.random() * 9000)}`;
+        existingUsername = await user.findOne({ username });
+      }
+      const role = email.toLowerCase().includes("admin") ? "admin" : "user";
       existingUser = await user.create({
         name,
         email,
         githubId,
+        username,
+        role,
         plan: "Free",
         subscriptionStatus: "inactive",
       });

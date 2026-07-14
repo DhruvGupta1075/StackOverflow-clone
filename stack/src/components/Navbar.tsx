@@ -1,8 +1,9 @@
 import { useAuth } from "@/lib/AuthContext";
-import { Menu, Search, Sparkles, X } from "lucide-react";
+import { Menu, Search, Sparkles, X, Bell, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import axiosInstance from "@/lib/axiosinstance";
 
 const Navbar = ({ handleslidein }: any) => {
   const { user, Logout } = useAuth();
@@ -11,6 +12,10 @@ const Navbar = ({ handleslidein }: any) => {
   const [hasMounted, setHasMounted] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+
   useEffect(() => {
     setHasMounted(true);
     if (router.query.search) {
@@ -18,8 +23,40 @@ const Navbar = ({ handleslidein }: any) => {
     }
   }, [router.query.search]);
 
+  useEffect(() => {
+    if (!user) return;
+    const fetchNotifications = async () => {
+      try {
+        const res = await axiosInstance.get("/api/community/notifications");
+        if (res.data.success) {
+          setNotifications(res.data.notifications);
+          setUnreadCount(res.data.unreadCount);
+        }
+      } catch (err) {
+        console.error("Error fetching notifications", err);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await axiosInstance.post("/api/community/notifications/read");
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error("Error marking notifications read", err);
+    }
+  };
+
   const handlelogout = () => {
     Logout();
+    setNotifications([]);
+    setUnreadCount(0);
+    setShowNotifications(false);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -103,6 +140,84 @@ const Navbar = ({ handleslidein }: any) => {
               </Link>
             ) : (
               <>
+                {/* Notifications Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-1.5 sm:p-2 text-gray-600 hover:text-orange-500 hover:bg-gray-100 rounded-full transition relative mr-1 cursor-pointer bg-transparent border-0"
+                    title="Notifications"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 bg-red-500 text-white font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-gray-200 z-50 overflow-hidden py-1 max-h-[400px] flex flex-col">
+                      <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                        <span className="font-semibold text-sm text-gray-700">Notifications</span>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={handleMarkAllAsRead}
+                            className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 cursor-pointer bg-transparent border-0"
+                          >
+                            <Check className="w-3.5 h-3.5" /> Mark all read
+                          </button>
+                        )}
+                      </div>
+                      <div className="overflow-y-auto flex-1 max-h-[300px]">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-gray-500">
+                            No notifications yet
+                          </div>
+                        ) : (
+                          notifications.map((n) => (
+                            <button
+                              key={n._id}
+                              onClick={async () => {
+                                setShowNotifications(false);
+                                if (!n.read) {
+                                  try {
+                                    await axiosInstance.post("/api/community/notifications/read");
+                                    setNotifications(prev => prev.map(item => item._id === n._id ? { ...item, read: true } : item));
+                                    setUnreadCount(prev => Math.max(0, prev - 1));
+                                  } catch (err) {
+                                    console.error(err);
+                                  }
+                                }
+                                router.push("/community");
+                              }}
+                              className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition border-b border-gray-100 flex flex-col gap-0.5 cursor-pointer ${
+                                !n.read ? "bg-orange-50/50" : "bg-white"
+                              }`}
+                            >
+                              <div className="text-sm text-gray-800">
+                                <span className="font-semibold">{n.sender?.username || n.sender?.name || "Someone"}</span>{" "}
+                                {n.type === "like" && "liked your post"}
+                                {n.type === "comment" && "commented on your post"}
+                                {n.type === "reply" && "replied to your comment"}
+                                {n.type === "mention" && "mentioned you in a comment"}
+                                {n.type === "follow" && "started following you"}
+                              </div>
+                              {n.post?.text && (
+                                <div className="text-xs text-gray-500 truncate max-w-full italic">
+                                  "{n.post.text}"
+                                </div>
+                              )}
+                              <span className="text-[10px] text-gray-400">
+                                {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <Link
                   href={`/users/${user._id}`}
                   title={`${user.plan || "Free"} Plan`}

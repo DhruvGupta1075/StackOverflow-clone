@@ -4,6 +4,7 @@ import {
   Bot,
   Building,
   FileText,
+  Globe,
   Home,
   MessageSquare,
   MessageSquareIcon,
@@ -72,6 +73,16 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
             </li>
             <li>
               <Link
+                href="/community"
+                onClick={handleNavClick}
+                className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
+              >
+                <Globe className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
+                Community
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/"
                 onClick={handleNavClick}
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
@@ -117,17 +128,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
               <button
                 onClick={() => {
                   handleNavClick();
-                  if (user) {
-                    if (user.plan === "Silver" || user.plan === "Gold") {
-                      router.push(`/users/${user._id}?tab=bookmarks`);
-                    } else {
-                      toast.info("Saves is a premium feature. Upgrade to Silver or Gold plan to use bookmarks.");
-                      router.push("/upgrade");
-                    }
-                  } else {
-                    toast.info("Please login to access bookmarks.");
-                    router.push("/auth");
-                  }
+                  router.push("/saves");
                 }}
                 className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm text-left cursor-pointer border-0 bg-transparent"
               >
@@ -135,6 +136,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 Saves
               </button>
             </li>
+
             <li>
               <Link
                 href="#"
