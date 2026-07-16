@@ -9,8 +9,10 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use((req) => {
   if (typeof window !== "undefined") {
     const user = localStorage.getItem("user");
+    console.log("[Axios Request Interceptor] user in localStorage:", user);
     if (user) {
       const token = JSON.parse(user).token;
+      console.log("[Axios Request Interceptor] token parsed:", token);
       if (token) {
         req.headers.Authorization = `Bearer ${token}`;
       }

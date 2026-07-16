@@ -7,6 +7,7 @@ import questionroute from "./routes/question.js"
 import answerroutes from "./routes/answer.js"
 import paymentroutes from "./routes/payment.js"
 import communityroutes from "./routes/community.js"
+import languageroutes from "./routes/language.js"
 const app = express();
 app.use(express.json({ limit: "30mb", extended: true }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
@@ -16,6 +17,8 @@ app.get("/", (req, res) => {
 });
 app.use('/user',userroutes)
 app.use('/api/auth',userroutes)
+app.use('/api/user',userroutes)
+app.use('/api/language',languageroutes)
 app.use('/question',questionroute)
 app.use('/answer',answerroutes)
 app.use('/payment',paymentroutes)

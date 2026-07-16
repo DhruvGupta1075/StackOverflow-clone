@@ -26,10 +26,12 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import { useTranslation } from "@/lib/useTranslationSafe";
 
 export default function SavesPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<"questions" | "posts">("questions");
@@ -199,13 +201,13 @@ export default function SavesPage() {
               href="/"
               className="text-xs text-blue-600 font-semibold hover:underline mb-2 flex items-center gap-1"
             >
-              <ChevronLeft className="w-3.5 h-3.5" /> Back to dashboard
+              <ChevronLeft className="w-3.5 h-3.5" /> {t("saves.back_to_dashboard", "Back to dashboard")}
             </Link>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <Bookmark className="w-6 h-6 text-blue-600 fill-blue-600" /> My Saved Items
+              <Bookmark className="w-6 h-6 text-blue-600 fill-blue-600" /> {t("saves.my_saved_items", "My Saved Items")}
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
-              Access your bookmarked questions and community post updates.
+              {t("saves.description", "Access your bookmarked questions and community post updates.")}
             </p>
           </div>
 
@@ -216,7 +218,7 @@ export default function SavesPage() {
                 <>
                   <input
                     type="text"
-                    placeholder="Search saved questions..."
+                    placeholder={t("saves.search_questions", "Search saved questions...")}
                     value={questionsSearch}
                     onChange={(e) => setQuestionsSearch(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
@@ -227,7 +229,7 @@ export default function SavesPage() {
                 <>
                   <input
                     type="text"
-                    placeholder="Search saved posts..."
+                    placeholder={t("saves.search_posts", "Search saved posts...")}
                     value={postsSearch}
                     onChange={(e) => setPostsSearch(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
@@ -249,7 +251,7 @@ export default function SavesPage() {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            <HelpCircle className="w-4 h-4" /> Saved Questions
+            <HelpCircle className="w-4 h-4" /> {t("saves.saved_questions", "Saved Questions")}
           </button>
           <button
             onClick={() => setActiveTab("posts")}
@@ -259,7 +261,7 @@ export default function SavesPage() {
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            <Globe className="w-4 h-4" /> Saved Posts
+            <Globe className="w-4 h-4" /> {t("saves.saved_posts", "Saved Posts")}
           </button>
         </div>
 
@@ -270,15 +272,15 @@ export default function SavesPage() {
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800">Authentication Required</h3>
+            <h3 className="text-lg font-bold text-gray-800">{t("saves.auth_required", "Authentication Required")}</h3>
             <p className="text-gray-500 text-sm">
-              Please log in to your account to save questions and access them later.
+              {t("saves.auth_desc", "Please log in to your account to save questions and access them later.")}
             </p>
             <Link
               href="/auth"
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded transition shadow border-0"
             >
-              Log in / Sign up
+              {t("saves.login_signup_btn", "Log in / Sign up")}
             </Link>
           </div>
         ) : activeTab === "questions" ? (
@@ -286,7 +288,7 @@ export default function SavesPage() {
           loadingQuestions ? (
             <div className="flex flex-col items-center justify-center py-20 gap-2">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600" />
-              <span className="text-xs text-gray-500 font-semibold">Loading saved questions...</span>
+              <span className="text-xs text-gray-500 font-semibold">{t("saves.loading_questions", "Loading saved questions...")}</span>
             </div>
           ) : !isPremium ? (
             /* Premium Locked State */
@@ -295,10 +297,10 @@ export default function SavesPage() {
                 <Sparkles className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-bold text-gray-800 flex items-center gap-1.5 justify-center">
-                Saves is a Premium Feature
+                {t("saves.premium_title", "Saves is a Premium Feature")}
               </h3>
               <p className="text-gray-600 text-sm max-w-md">
-                Upgrade to the **Silver** or **Gold** Plan to unlock bookmarking forum threads. Stay organized by saving questions, reference snippets, and answers for easy lookup!
+                {t("saves.premium_desc", "Upgrade to the Silver or Gold Plan to unlock bookmarking forum threads. Stay organized by saving questions, reference snippets, and answers for easy lookup!")}
               </p>
               <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800 text-left w-full flex items-start gap-2 max-w-md">
                 <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -310,7 +312,7 @@ export default function SavesPage() {
                 onClick={() => router.push("/upgrade")}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded shadow transition border-0 cursor-pointer"
               >
-                View Pricing Plans
+                {t("saves.view_pricing_btn", "View Pricing Plans")}
               </button>
             </div>
           ) : filteredQuestions.length === 0 ? (
@@ -320,18 +322,18 @@ export default function SavesPage() {
                 <HelpCircle className="w-8 h-8" />
               </div>
               <h3 className="text-lg font-bold text-gray-800">
-                {questionsSearch ? "No search results" : "No saved questions yet"}
+                {questionsSearch ? t("saves.no_results_title", "No search results") : t("saves.empty_title", "No saved questions yet")}
               </h3>
               <p className="text-gray-500 text-sm max-w-md">
                 {questionsSearch
-                  ? "Try searching for a different keyword or checking tags."
-                  : "When browsing forum threads, click the bookmark icon on any question to save it here for quick reference."}
+                  ? t("saves.no_results_desc", "Try searching for a different keyword or checking tags.")
+                  : t("saves.empty_desc", "When browsing forum threads, click the bookmark icon on any question to save it here for quick reference.")}
               </p>
               <Link
                 href="/"
                 className="text-xs bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2 font-bold transition shadow-sm"
               >
-                Browse Questions
+                {t("saves.browse_questions_btn", "Browse Questions")}
               </Link>
             </div>
           ) : (

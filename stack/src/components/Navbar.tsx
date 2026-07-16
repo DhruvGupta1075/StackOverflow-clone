@@ -4,9 +4,23 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import axiosInstance from "@/lib/axiosinstance";
+import LanguageOtpModal from "./LanguageOtpModal";
+import { useTranslation } from "@/lib/useTranslationSafe";
+import i18n from "i18next";
+import { toast } from "react-toastify";
+
+const LANGUAGES = [
+  { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "es", name: "Spanish", flag: "🇪🇸" },
+  { code: "hi", name: "Hindi", flag: "🇮🇳" },
+  { code: "pt", name: "Portuguese", flag: "🇵🇹" },
+  { code: "zh", name: "Chinese", flag: "🇨🇳" },
+  { code: "fr", name: "French", flag: "🇫🇷" }
+];
 
 const Navbar = ({ handleslidein }: any) => {
   const { user, Logout } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [searchVal, setSearchVal] = useState("");
   const [hasMounted, setHasMounted] = useState(false);
@@ -15,6 +29,12 @@ const Navbar = ({ handleslidein }: any) => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  // Language & OTP states
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [targetLang, setTargetLang] = useState("en");
+  const [targetLangName, setTargetLangName] = useState("English");
 
   useEffect(() => {
     setHasMounted(true);
@@ -32,8 +52,10 @@ const Navbar = ({ handleslidein }: any) => {
           setNotifications(res.data.notifications);
           setUnreadCount(res.data.unreadCount);
         }
-      } catch (err) {
-        console.error("Error fetching notifications", err);
+      } catch (err: any) {
+        if (err.response?.status !== 401) {
+          console.error("Error fetching notifications", err);
+        }
       }
     };
 
@@ -69,6 +91,41 @@ const Navbar = ({ handleslidein }: any) => {
     setMobileSearchOpen(false);
   };
 
+  const handleLanguageSelect = async (code: string, name: string) => {
+    setLangDropdownOpen(false);
+    if (i18n.language === code) return;
+
+    if (!user) {
+      // Guest flow: no OTP needed
+      localStorage.setItem("i18nextLng", code);
+      await i18n.changeLanguage(code);
+      toast.success(t("messages.success_change", "Language changed successfully."));
+    } else {
+      // Logged-in user flow: OTP required
+      setTargetLang(code);
+      setTargetLangName(name);
+
+      const toastId = toast.loading("Sending verification OTP...");
+      try {
+        const res = await axiosInstance.post("/api/language/request-change", {
+          language: code
+        });
+        toast.dismiss(toastId);
+        if (res.data.success) {
+          toast.success(res.data.message || (code === "fr" ? "OTP sent to email" : "OTP sent to phone"));
+          setOtpModalOpen(true);
+        }
+      } catch (err: any) {
+        toast.dismiss(toastId);
+        toast.error(err.response?.data?.message || "Failed to send verification OTP.");
+      }
+    }
+  };
+
+  const currentLangInfo = hasMounted
+    ? (LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[0])
+    : LANGUAGES[0];
+
   return (
     <div className="sticky top-0 z-30 w-full bg-white border-t-[3px] border-[#ef8236] shadow-[0_1px_5px_#00000033]">
       {/* Main navbar row */}
@@ -91,17 +148,20 @@ const Navbar = ({ handleslidein }: any) => {
                 href="/upgrade"
                 className="text-sm text-orange-600 font-bold px-2 lg:px-4 py-2 rounded hover:bg-orange-50 transition flex items-center gap-1 whitespace-nowrap"
               >
-                <Sparkles className="w-4 h-4 animate-pulse" /> Pricing Plans
+                <Sparkles className="w-4 h-4 animate-pulse" /> {t("navbar.pricing_plans", "Pricing Plans")}
               </Link>
-              {["About", "Products"].map((item) => (
-                <Link
-                  key={item}
-                  href="/"
-                  className="hidden lg:block text-sm text-[#454545] font-medium px-4 py-2 rounded hover:bg-gray-200 transition"
-                >
-                  {item}
-                </Link>
-              ))}
+              <Link
+                href="/"
+                className="hidden lg:block text-sm text-[#454545] font-medium px-4 py-2 rounded hover:bg-gray-200 transition"
+              >
+                {t("navbar.about", "About")}
+              </Link>
+              <Link
+                href="/"
+                className="hidden lg:block text-sm text-[#454545] font-medium px-4 py-2 rounded hover:bg-gray-200 transition"
+              >
+                {t("navbar.products", "Products")}
+              </Link>
             </div>
             {/* Desktop/Tablet search */}
             <form onSubmit={handleSearchSubmit} className="hidden md:block flex-grow relative px-2 lg:px-3">
@@ -109,7 +169,7 @@ const Navbar = ({ handleslidein }: any) => {
                 type="text"
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
-                placeholder="Search questions..."
+                placeholder={t("navbar.search_placeholder", "Search questions...")}
                 className="w-full max-w-[600px] pl-9 pr-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-300"
               />
               <button type="submit" className="absolute left-3 md:left-4 top-2.5">
@@ -131,12 +191,40 @@ const Navbar = ({ handleslidein }: any) => {
               )}
             </button>
 
+            {/* Language Selector Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded hover:bg-gray-100 transition text-sm font-semibold text-[#454545] cursor-pointer bg-transparent border border-gray-200"
+                title="Switch Language"
+              >
+                <span className="text-base leading-none">{currentLangInfo.flag}</span>
+                <span className="hidden md:inline text-xs">{currentLangInfo.name}</span>
+              </button>
+              {langDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-40 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => handleLanguageSelect(lang.code, lang.name)}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2 cursor-pointer border-0 bg-transparent ${
+                        i18n.language === lang.code ? "bg-orange-50/50 text-orange-600 font-semibold" : "text-gray-700"
+                      }`}
+                    >
+                      <span className="text-base leading-none">{lang.flag}</span>
+                      <span>{lang.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
              {!hasMounted ? null : !user ? (
               <Link
                 href="/auth"
                 className="text-xs sm:text-sm font-medium text-[#454545] bg-[#e7f8fe] hover:bg-[#d3e4eb] border border-blue-500 px-3 sm:px-4 py-1.5 rounded transition whitespace-nowrap"
               >
-                Log in
+                {t("navbar.login", "Log in")}
               </Link>
             ) : (
               <>
@@ -145,7 +233,7 @@ const Navbar = ({ handleslidein }: any) => {
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
                     className="p-1.5 sm:p-2 text-gray-600 hover:text-orange-500 hover:bg-gray-100 rounded-full transition relative mr-1 cursor-pointer bg-transparent border-0"
-                    title="Notifications"
+                    title={t("navbar.notifications", "Notifications")}
                   >
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
@@ -158,20 +246,20 @@ const Navbar = ({ handleslidein }: any) => {
                   {showNotifications && (
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-gray-200 z-50 overflow-hidden py-1 max-h-[400px] flex flex-col">
                       <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                        <span className="font-semibold text-sm text-gray-700">Notifications</span>
+                        <span className="font-semibold text-sm text-gray-700">{t("navbar.notifications", "Notifications")}</span>
                         {unreadCount > 0 && (
                           <button
                             onClick={handleMarkAllAsRead}
                             className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 cursor-pointer bg-transparent border-0"
                           >
-                            <Check className="w-3.5 h-3.5" /> Mark all read
+                            <Check className="w-3.5 h-3.5" /> {t("navbar.mark_all_read", "Mark all read")}
                           </button>
                         )}
                       </div>
                       <div className="overflow-y-auto flex-1 max-h-[300px]">
                         {notifications.length === 0 ? (
                           <div className="px-4 py-6 text-center text-sm text-gray-500">
-                            No notifications yet
+                            {t("navbar.no_notifications", "No notifications yet")}
                           </div>
                         ) : (
                           notifications.map((n) => (
@@ -196,11 +284,11 @@ const Navbar = ({ handleslidein }: any) => {
                             >
                               <div className="text-sm text-gray-800">
                                 <span className="font-semibold">{n.sender?.username || n.sender?.name || "Someone"}</span>{" "}
-                                {n.type === "like" && "liked your post"}
-                                {n.type === "comment" && "commented on your post"}
-                                {n.type === "reply" && "replied to your comment"}
-                                {n.type === "mention" && "mentioned you in a comment"}
-                                {n.type === "follow" && "started following you"}
+                                {n.type === "like" && t("navbar.liked_post", "liked your post")}
+                                {n.type === "comment" && t("navbar.commented_post", "commented on your post")}
+                                {n.type === "reply" && t("navbar.replied_comment", "replied to your comment")}
+                                {n.type === "mention" && t("navbar.mentioned_comment", "mentioned you in a comment")}
+                                {n.type === "follow" && t("navbar.started_following", "started following you")}
                               </div>
                               {n.post?.text && (
                                 <div className="text-xs text-gray-500 truncate max-w-full italic">
@@ -239,7 +327,7 @@ const Navbar = ({ handleslidein }: any) => {
                   onClick={handlelogout}
                   className="text-xs sm:text-sm font-medium text-[#454545] bg-[#e7f8fe] hover:bg-[#d3e4eb] border border-blue-500 px-3 sm:px-4 py-1.5 rounded transition whitespace-nowrap"
                 >
-                  Log out
+                  {t("navbar.logout", "Log out")}
                 </button>
               </>
             )}
@@ -255,7 +343,7 @@ const Navbar = ({ handleslidein }: any) => {
               type="text"
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="Search questions..."
+              placeholder={t("navbar.search_placeholder", "Search questions...")}
               autoFocus
               className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-300"
             />
@@ -265,6 +353,17 @@ const Navbar = ({ handleslidein }: any) => {
           </form>
         </div>
       )}
+
+      {/* Language Change Verification OTP Modal */}
+      <LanguageOtpModal
+        isOpen={otpModalOpen}
+        onClose={() => setOtpModalOpen(false)}
+        targetLanguage={targetLang}
+        targetLanguageName={targetLangName}
+        onSuccess={() => {
+          // Additional cleanup or redirection on successful change if needed
+        }}
+      />
     </div>
   );
 };

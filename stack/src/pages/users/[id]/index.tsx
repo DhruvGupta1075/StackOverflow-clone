@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -20,6 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { useTranslation } from "@/lib/useTranslationSafe";
 const getUserData = (id: string) => {
   const users = {
     "1": {
@@ -43,6 +45,7 @@ const getUserData = (id: string) => {
 const index = () => {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = router.query;
   const [users, setusers] = useState<any>(null);
   const [loading, setloading] = useState(true);
@@ -274,6 +277,9 @@ const index = () => {
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white text-gray-900">
                     <DialogHeader>
                       <DialogTitle>Edit Profile</DialogTitle>
+                      <DialogDescription className="sr-only">
+                        Edit your public name, bio, and key skills to display on your user profile page.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-6 py-4">
                       {/* Basic Information */}
@@ -546,13 +552,13 @@ const index = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg text-gray-800 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-blue-600" /> Billing Details
+                    <CreditCard className="w-5 h-5 text-blue-600" /> {t("profile.billing_details", "Billing Details")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="billingFormName">Billing Name</Label>
+                      <Label htmlFor="billingFormName">{t("profile.name", "Billing Name")}</Label>
                       <Input
                         id="billingFormName"
                         value={billingForm.name}
@@ -561,7 +567,7 @@ const index = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingFormEmail">Billing Email</Label>
+                      <Label htmlFor="billingFormEmail">{t("profile.email", "Billing Email")}</Label>
                       <Input
                         id="billingFormEmail"
                         type="email"
@@ -571,7 +577,7 @@ const index = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingFormPhone">Phone Number</Label>
+                      <Label htmlFor="billingFormPhone">{t("profile.phone", "Phone Number")}</Label>
                       <Input
                         id="billingFormPhone"
                         value={billingForm.phone}
@@ -580,7 +586,7 @@ const index = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="billingFormAddress">Billing Address</Label>
+                      <Label htmlFor="billingFormAddress">{t("profile.address", "Billing Address")}</Label>
                       <Input
                         id="billingFormAddress"
                         value={billingForm.address}
@@ -589,8 +595,8 @@ const index = () => {
                       />
                     </div>
                   </div>
-                  <Button onClick={handleSaveBilling} className="bg-blue-600 hover:bg-blue-700 text-white">
-                    Save Billing Details
+                  <Button onClick={handleSaveBilling} className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
+                    {t("profile.save_billing", "Save Billing Details")}
                   </Button>
                 </CardContent>
               </Card>

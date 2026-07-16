@@ -45,6 +45,15 @@ const userschema = mongoose.Schema({
     default: []
   },
   bookmarks: { type: [String], default: [] },
-  lastForgotPasswordRequest: { type: Date, default: null }
+  lastForgotPasswordRequest: { type: Date, default: null },
+  preferredLanguage: { type: String, default: "en" },
+  otpCode: { type: String, default: null },
+  otpExpiry: { type: Date, default: null },
+  otpAttempts: { type: Number, default: 0 },
+  otpResendAttempts: { type: Number, default: 0 },
+  lastOtpSent: { type: Date, default: null },
+  otpType: { type: String, default: null },
+  languageVerificationStatus: { type: String, default: "verified" },
+  languageVerificationLockUntil: { type: Date, default: null }
 });
 export default mongoose.model("user", userschema);

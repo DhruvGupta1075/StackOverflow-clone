@@ -10,6 +10,7 @@ import { Star, Award, Sparkles, Filter, Lock, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/useTranslationSafe";
 
 const questions = [
   {
@@ -77,6 +78,7 @@ export default function Home() {
   const [question, setquestion] = useState<any>(null);
   const [loading, setloading] = useState(true);
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Filter States
   const [showFilters, setShowFilters] = useState(false);
@@ -141,14 +143,16 @@ export default function Home() {
   if (loading) {
     return (
       <Mainlayout>
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
       </Mainlayout>
     );
   }
   if (!question || question.length === 0) {
     return (
       <Mainlayout>
-        <div className="text-center text-gray-500 mt-4">No question found.</div>
+        <div className="text-center text-gray-500 mt-4">{t("dashboard.empty_questions", "No questions found.")}</div>
       </Mainlayout>
     );
   }
@@ -157,40 +161,40 @@ export default function Home() {
     <Mainlayout>
       <div className="min-w-0">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h1 className="text-xl lg:text-2xl font-semibold">Top Questions</h1>
+          <h1 className="text-xl lg:text-2xl font-semibold">{t("dashboard.top_questions", "Top Questions")}</h1>
           <button
             onClick={() => router.push("/ask")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap cursor-pointer border-0"
           >
-            Ask Question
+            {t("dashboard.ask_question", "Ask Question")}
           </button>
         </div>
         <div className="w-full">
           <div className="flex flex-col sm:flex-row items-start sm:items-center mb-4 text-sm gap-2 sm:gap-4">
-            <span className="text-gray-600">{question?.length || 0} questions</span>
+            <span className="text-gray-600">{question?.length || 0} {t("sidebar.questions", "questions")}</span>
             <div className="flex flex-wrap gap-1 sm:gap-2 flex-grow items-center">
-              <button className="px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm">
-                Newest
+              <button className="px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm cursor-pointer border-0">
+                {t("dashboard.newest", "Newest")}
               </button>
-              <button className="px-2 sm:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded text-xs sm:text-sm">
-                Active
+              <button className="px-2 sm:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded text-xs sm:text-sm cursor-pointer border-0">
+                {t("dashboard.active", "Active")}
               </button>
-              <button className="px-2 sm:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded flex items-center text-xs sm:text-sm">
-                Bountied
+              <button className="px-2 sm:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded flex items-center text-xs sm:text-sm cursor-pointer border-0">
+                {t("dashboard.bountied", "Bountied")}
                 <Badge variant="secondary" className="ml-1 text-xs">
                   25
                 </Badge>
               </button>
-              <button className="px-2 sm:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded text-xs sm:text-sm">
-                Unanswered
+              <button className="px-2 sm:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded text-xs sm:text-sm cursor-pointer border-0">
+                {t("dashboard.unanswered", "Unanswered")}
               </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`px-2 sm:px-3 py-1 border rounded ml-auto text-xs sm:text-sm flex items-center gap-1 transition ${
+                className={`px-2 sm:px-3 py-1 border rounded ml-auto text-xs sm:text-sm flex items-center gap-1 transition cursor-pointer ${
                   showFilters ? "bg-orange-100 text-orange-800 border-orange-300 font-semibold shadow-xs" : "border-gray-300 text-gray-600 hover:bg-gray-50"
                 }`}
               >
-                <Filter className="w-3.5 h-3.5" /> Filter {Object.keys(router.query).filter(k => k !== "search").length > 0 && "•"}
+                <Filter className="w-3.5 h-3.5" /> {t("dashboard.filter_button", "Filter")} {Object.keys(router.query).filter(k => k !== "search").length > 0 && "•"}
               </button>
             </div>
           </div>
@@ -202,15 +206,15 @@ export default function Home() {
               {(!user || user.plan === "Free") && (
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex flex-col items-center justify-center rounded-lg z-10 p-6 text-center">
                   <Lock className="w-8 h-8 text-orange-500 mb-2 animate-bounce" />
-                  <h4 className="font-bold text-gray-900 text-base">Advanced Search Filters (Premium Feature)</h4>
+                  <h4 className="font-bold text-gray-900 text-base">{t("dashboard.advanced_filters_premium", "Advanced Search Filters (Premium Feature)")}</h4>
                   <p className="text-xs text-gray-600 max-w-sm my-1">
-                    Upgrade to Bronze, Silver, or Gold plan to search by tag, date ranges, vote count, and author name.
+                    {t("dashboard.advanced_filters_upgrade", "Upgrade to Bronze, Silver, or Gold plan to search by tag, date ranges, vote count, and author name.")}
                   </p>
                   <button
                     onClick={() => router.push("/upgrade")}
-                    className="mt-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow hover:opacity-90"
+                    className="mt-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow hover:opacity-90 cursor-pointer border-0"
                   >
-                    Unlock Filters (From ₹99)
+                    {t("dashboard.unlock_filters_btn", "Unlock Filters (From ₹99)")}
                   </button>
                 </div>
               )}
@@ -218,16 +222,16 @@ export default function Home() {
               <form onSubmit={handleApplyFilters} className="space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b">
                   <span className="font-semibold text-gray-800 flex items-center gap-1.5">
-                    <Filter className="w-4 h-4 text-orange-500" /> Advanced Filter Settings
+                    <Filter className="w-4 h-4 text-orange-500" /> {t("dashboard.advanced_filters_title", "Advanced Filter Settings")}
                   </span>
-                  <button type="button" onClick={() => setShowFilters(false)} className="text-gray-400 hover:text-red-500">
+                  <button type="button" onClick={() => setShowFilters(false)} className="text-gray-400 hover:text-red-500 cursor-pointer border-0 bg-transparent">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="tags-filter">Search Tags (comma separated)</Label>
+                    <Label htmlFor="tags-filter">{t("dashboard.filter_tags", "Search Tags (comma separated)")}</Label>
                     <Input
                       id="tags-filter"
                       placeholder="e.g. javascript, react"
@@ -236,7 +240,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="author-filter">Author Display Name</Label>
+                    <Label htmlFor="author-filter">{t("dashboard.filter_author", "Author Display Name")}</Label>
                     <Input
                       id="author-filter"
                       placeholder="e.g. PR0X"
@@ -245,7 +249,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="votes-filter">Min Net Votes</Label>
+                    <Label htmlFor="votes-filter">{t("dashboard.filter_min_votes", "Min Net Votes")}</Label>
                     <Input
                       id="votes-filter"
                       type="number"
@@ -255,7 +259,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="start-date-filter">Start Date</Label>
+                    <Label htmlFor="start-date-filter">{t("dashboard.filter_start_date", "Start Date")}</Label>
                     <Input
                       id="start-date-filter"
                       type="date"
@@ -264,7 +268,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="end-date-filter">End Date</Label>
+                    <Label htmlFor="end-date-filter">{t("dashboard.filter_end_date", "End Date")}</Label>
                     <Input
                       id="end-date-filter"
                       type="date"
@@ -281,17 +285,17 @@ export default function Home() {
                       className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
                     />
                     <Label htmlFor="unanswered-filter" className="cursor-pointer select-none font-medium text-gray-700">
-                      Show Unanswered Questions Only
+                      {t("dashboard.filter_unanswered_only", "Show Unanswered Questions Only")}
                     </Label>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2 border-t">
-                  <Button type="button" variant="outline" onClick={handleResetFilters} size="sm" className="bg-transparent border-gray-300">
-                    Reset
+                  <Button type="button" variant="outline" onClick={handleResetFilters} size="sm" className="bg-transparent border-gray-300 cursor-pointer">
+                    {t("dashboard.reset_filters", "Reset")}
                   </Button>
-                  <Button type="submit" size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
-                    Apply Filters
+                  <Button type="submit" size="sm" className="bg-orange-600 hover:bg-orange-700 text-white cursor-pointer border-0">
+                    {t("dashboard.apply_filters", "Apply Filters")}
                   </Button>
                 </div>
               </form>
@@ -306,7 +310,7 @@ export default function Home() {
                       <div className="font-medium">
                         {question.upvote.length - question.downvote.length}
                       </div>
-                      <div className="text-xs">votes</div>
+                      <div className="text-xs">{t("dashboard.votes", "votes")}</div>
                     </div>
                     <div className="text-center">
                       <div
@@ -320,8 +324,8 @@ export default function Home() {
                       </div>
                       <div className="text-xs">
                         {question.noofanswer === 1
-                          ? "answer"
-                          : "answers"}
+                          ? t("compiler.answer", "answer")
+                          : t("compiler.answers", "answers")}
                       </div>
                     </div>
                   </div>
@@ -381,7 +385,7 @@ export default function Home() {
                           </span>
                         </Link>
 
-                        <span>asked {new Date(question.askedon).toLocaleDateString()}</span>
+                        <span>{t("dashboard.asked", "asked")} {new Date(question.askedon).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>

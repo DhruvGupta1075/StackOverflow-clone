@@ -18,11 +18,12 @@ import React from "react";
 import { Badge } from "./ui/badge";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/router";
-import { toast } from "react-toastify";
+import { useTranslation } from "@/lib/useTranslationSafe";
 
 const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void }) => {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleNavClick = () => {
     // Auto-close sidebar on mobile when a link is clicked
@@ -58,7 +59,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-orange-600 font-bold hover:bg-orange-50 rounded text-sm"
               >
                 <Sparkles className="w-4 h-4 mr-2 flex-shrink-0 animate-pulse" />
-                Pricing Plans
+                {t("navbar.pricing_plans", "Pricing Plans")}
               </Link>
             </li>
             <li>
@@ -68,7 +69,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <Home className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Home
+                {t("sidebar.home", "Home")}
               </Link>
             </li>
             <li>
@@ -78,7 +79,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <Globe className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Community
+                {t("sidebar.community", "Community")}
               </Link>
             </li>
             <li>
@@ -88,7 +89,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <MessageSquareIcon className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Questions
+                {t("sidebar.questions", "Questions")}
               </Link>
             </li>
             <li>
@@ -98,7 +99,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <Bot className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                AI Assist
+                {t("sidebar.ai_assist", "AI Assist")}
                 <Badge variant="secondary" className="ml-auto text-xs">
                   Labs
                 </Badge>
@@ -111,7 +112,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <Tag className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Tags
+                {t("sidebar.tags", "Tags")}
               </Link>
             </li>
             <li>
@@ -121,7 +122,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <Users className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Users
+                {t("sidebar.users", "Users")}
               </Link>
             </li>
             <li>
@@ -133,7 +134,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="w-full flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm text-left cursor-pointer border-0 bg-transparent"
               >
                 <Bookmark className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Saves
+                {t("sidebar.saves", "Saves")}
               </button>
             </li>
 
@@ -144,7 +145,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <Trophy className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Challenges
+                {t("sidebar.challenges", "Challenges")}
                 <Badge
                   variant="secondary"
                   className="ml-auto text-xs bg-orange-100 text-orange-800"
@@ -160,7 +161,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <MessageSquare className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Chat
+                {t("sidebar.chat", "Chat")}
               </Link>
             </li>
             <li>
@@ -170,7 +171,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <FileText className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Articles
+                {t("sidebar.articles", "Articles")}
               </Link>
             </li>
 
@@ -181,7 +182,7 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
                 className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
               >
                 <Building className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                Companies
+                {t("sidebar.companies", "Companies")}
               </Link>
             </li>
           </ul>
