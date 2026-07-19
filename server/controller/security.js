@@ -68,8 +68,9 @@ export const verifyOtp = async (req, res) => {
       status: "Success",
     });
 
-    // Send email alert for new device login (asynchronously in the background)
-    sendNewDeviceAlertEmail(matchedUser.email, matchedUser.name, {
+    // Send email alert for new device login (awaited for proper execution tracing)
+    console.log(`[Security Controller] Dispatching new device alert email for ${matchedUser.email}...`);
+    const alertResult = await sendNewDeviceAlertEmail(matchedUser.email, matchedUser.name, {
       browser: userAgentDetails.browser,
       operatingSystem: userAgentDetails.operatingSystem,
       deviceType: userAgentDetails.deviceType,
@@ -77,6 +78,7 @@ export const verifyOtp = async (req, res) => {
       location: userAgentDetails.location,
       timestamp: new Date(),
     });
+    console.log(`[Security Controller] New device alert email sent. Result:`, alertResult);
 
     return res.status(200).json({ data: matchedUser, token: accessToken });
   } catch (error) {

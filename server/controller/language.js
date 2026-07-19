@@ -1,10 +1,10 @@
 import user from "../models/auth.js";
 import bcrypt from "bcryptjs";
-import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
 import { sendRealSMS } from "../utils/sms.js";
+import { sendLanguageVerificationEmail } from "../services/emailService.js";
 
 const SUPPORTED_LANGUAGES = ["en", "es", "hi", "pt", "zh", "fr"];
 
@@ -94,80 +94,16 @@ export const requestLanguageChange = async (req, res) => {
     await activeUser.save();
 
     if (verificationType === "email") {
-      // Send Email OTP
-      const mailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <h2 style="color: #f48225;">Code Quest Support</h2>
-          </div>
-          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px solid #eee;">
-            <h3 style="margin-top: 0; color: #333;">Language Change Verification</h3>
-            <p>Hello <strong>${activeUser.name}</strong>,</p>
-            <p>We received a request to change your preferred language on Code Quest to <strong>French (fr)</strong>.</p>
-            <p>Please use the following One-Time Password (OTP) to verify this change:</p>
-            <div style="font-family: monospace; font-size: 24px; font-weight: bold; background-color: #fff; padding: 15px; text-align: center; letter-spacing: 4px; border: 1px solid #ddd; border-radius: 4px; margin: 20px 0; color: #2b2b2b;">
-              ${otp}
-            </div>
-            <p>This OTP is valid for <strong>5 minutes</strong> (Expires at ${new Date(activeUser.otpExpiry).toLocaleTimeString()}) and can only be used once.</p>
-            <p style="color: #e74c3c; font-weight: bold;">Security Warning: If you did not request this language change, please ignore this email and secure your account immediately.</p>
-          </div>
-          <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #777; border-top: 1px solid #eee; padding-top: 15px;">
-            <p>&copy; 2026 Code Quest. All rights reserved.</p>
-          </div>
-        </div>
-      `;
+      // Send Email OTP using centralized email service
+      console.log(`[Language Controller] Requesting language verification email for ${activeUser.email}...`);
+      const emailResult = await sendLanguageVerificationEmail(activeUser.email, activeUser.name, otp, activeUser.otpExpiry);
 
-      // Save locally for validation
-      const emailsDir = path.join(process.cwd(), "sent_emails");
-      if (!fs.existsSync(emailsDir)) {
-        fs.mkdirSync(emailsDir, { recursive: true });
-      }
-      const emailLogPath = path.join(emailsDir, `language-change-${activeUser._id}.html`);
-      fs.writeFileSync(emailLogPath, mailHtml);
-      console.log(`[Email Mock] Language change email preview written to: ${emailLogPath}`);
-
-      // Set up Nodemailer transporter
-      let transporter;
-      if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-        transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || "smtp.ethereal.email",
-          port: parseInt(process.env.SMTP_PORT || "587", 10),
-          secure: process.env.SMTP_SECURE === "true",
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-          },
+      if (!emailResult.success) {
+        console.warn(`[Language Controller Warning] Email delivery failed:`, emailResult.error?.message);
+        return res.status(200).json({
+          success: true,
+          message: "OTP generation succeeded (Email delivery failed, check server console/logs for OTP)."
         });
-      } else {
-        try {
-          const testAccount = await nodemailer.createTestAccount();
-          transporter = nodemailer.createTransport({
-            host: "smtp.ethereal.email",
-            port: 587,
-            secure: false,
-            auth: {
-              user: testAccount.user,
-              pass: testAccount.pass,
-            },
-          });
-          console.log(`[Email Mock] Created temporary Ethereal account: ${testAccount.user}`);
-        } catch (err) {
-          console.warn("[Email WARNING] Failed to create Ethereal test account:", err.message);
-        }
-      }
-
-      if (transporter) {
-        try {
-          await transporter.sendMail({
-            from: '"Code Quest Support" <support@codequest.com>',
-            to: activeUser.email,
-            subject: "Language Change Verification",
-            html: mailHtml,
-          });
-          console.log(`[Email Transporter] OTP mail sent successfully to ${activeUser.email}`);
-        } catch (mailError) {
-          console.warn("[Email WARNING] SMTP delivery failed. Mock file preview saved instead. Error: ", mailError.message);
-        }
       }
 
       return res.status(200).json({

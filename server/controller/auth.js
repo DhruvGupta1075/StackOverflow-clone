@@ -5,9 +5,7 @@ import jwt from "jsonwebtoken";
 import question from "../models/question.js";
 import { handleUserLogin, establishSession, getClientIp } from "../services/sessionService.js";
 import { generatePassword } from "../utils/passwordGenerator.js";
-import nodemailer from "nodemailer";
-import fs from "fs";
-import path from "path";
+import { sendForgotPasswordEmail } from "../services/emailService.js";
 import { parseUserAgent } from "../utils/userAgent.js";
 import { getApproximateLocation } from "../utils/location.js";
 import LoginActivity from "../models/loginActivity.js";
@@ -420,87 +418,12 @@ export const forgotPassword = async (req, res) => {
     existingUser.lastForgotPasswordRequest = today;
     await existingUser.save();
 
-    // Construct the email HTML body
-    const mailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="color: #f48225;">StackOverflow Clone</h2>
-        </div>
-        <div style="background-color: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px solid #eee;">
-          <h3 style="margin-top: 0; color: #333;">Password Reset Successful</h3>
-          <p>Hello <strong>${existingUser.name}</strong>,</p>
-          <p>We received a request to reset your password. A new password has been generated for you:</p>
-          <div style="font-family: monospace; font-size: 20px; font-weight: bold; background-color: #fff; padding: 15px; text-align: center; letter-spacing: 2px; border: 1px solid #ddd; border-radius: 4px; margin: 20px 0; color: #2b2b2b;">
-            ${plainPassword}
-          </div>
-          <p style="color: #c0392b; font-weight: bold;">Please copy this password. You should change it immediately after logging in.</p>
-          <p>If you did not request this password reset, please secure your account immediately.</p>
-        </div>
-        <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #777; border-top: 1px solid #eee; padding-top: 15px;">
-          <p>&copy; 2026 StackOverflow Clone. All rights reserved.</p>
-        </div>
-      </div>
-    `;
+    // Send password reset email using centralized email service
+    console.log(`[Auth Controller] Requesting password reset email for ${existingUser.email}...`);
+    const emailResult = await sendForgotPasswordEmail(existingUser.email, existingUser.name, plainPassword);
 
-    // Save locally for verification
-    const emailsDir = path.join(process.cwd(), "sent_emails");
-    if (!fs.existsSync(emailsDir)) {
-      fs.mkdirSync(emailsDir, { recursive: true });
-    }
-    const emailLogPath = path.join(emailsDir, `forgot-password-${existingUser._id}.html`);
-    fs.writeFileSync(emailLogPath, mailHtml);
-    console.log(`[Email Mock] Forgot password email preview written to: ${emailLogPath}`);
-
-    // Set up Nodemailer transporter
-    let transporter;
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || "smtp.ethereal.email",
-        port: parseInt(process.env.SMTP_PORT || "587", 10),
-        secure: process.env.SMTP_SECURE === "true",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    } else {
-      // Auto-generate test SMTP credentials from ethereal.email if none are configured
-      try {
-        const testAccount = await nodemailer.createTestAccount();
-        transporter = nodemailer.createTransport({
-          host: "smtp.ethereal.email",
-          port: 587,
-          secure: false,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-          },
-        });
-        console.log(`[Email Mock] Created temporary Ethereal account: ${testAccount.user}`);
-      } catch (err) {
-        console.warn("[Email WARNING] Failed to create Ethereal test account:", err.message);
-      }
-    }
-
-    if (transporter) {
-      try {
-        const info = await transporter.sendMail({
-          from: '"StackOverflow Clone Support" <support@stackoverflowclone.com>',
-          to: existingUser.email,
-          subject: "[StackOverflow Clone] Password Reset Request",
-          html: mailHtml,
-        });
-        console.log(`[Email Transporter] Forgot password mail sent successfully: ${info.messageId}`);
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          console.log(`[Email Mock] View email preview at: ${previewUrl}`);
-        }
-      } catch (mailError) {
-        console.warn(
-          "[Email WARNING] SMTP delivery failed. Using saved local file preview instead. Error detail:",
-          mailError.message
-        );
-      }
+    if (!emailResult.success) {
+      console.warn(`[Auth Controller Warning] Forgot password email delivery failed:`, emailResult.error?.message);
     }
 
     return res.status(200).json({

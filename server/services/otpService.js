@@ -31,12 +31,13 @@ export const createAndSendOtp = async (user) => {
     lastSentAt: new Date(),
   });
 
-  // Send OTP via email service (asynchronously in the background)
-  sendOtpEmail(user.email, user.name, otp);
+  // Send OTP via email service (awaited for proper logging and error handling)
+  console.log(`[OTP Service] Dispatching OTP email for ${user.email}...`);
+  const emailResult = await sendOtpEmail(user.email, user.name, otp);
 
   // Return the OTP in console for easy debugging if SMTP fails
-  console.log(`[OTP Service] Generated OTP for user ${user.email}: ${otp}`);
-  return otp;
+  console.log(`[OTP Service] Generated OTP for user ${user.email}: ${otp} (Email Delivery Success: ${emailResult?.success})`);
+  return { otp, emailResult };
 };
 
 export const verifyOtpCode = async (userId, otpCode) => {
@@ -83,7 +84,13 @@ export const resendOtpCode = async (user) => {
 
   if (!verification) {
     // If expired/not found, create a brand new one
-    await createAndSendOtp(user);
+    const { emailResult } = await createAndSendOtp(user);
+    if (emailResult && !emailResult.success) {
+      return { 
+        success: false, 
+        reason: "Failed to deliver OTP email. Please verify your email configuration or check server logs." 
+      };
+    }
     return { success: true, message: "An OTP has been sent to your registered email." };
   }
 
@@ -115,8 +122,16 @@ export const resendOtpCode = async (user) => {
   verification.lastSentAt = now;
   await verification.save();
 
-  sendOtpEmail(user.email, user.name, otp);
-  console.log(`[OTP Service Resend] Generated OTP for user ${user.email}: ${otp}`);
+  console.log(`[OTP Service Resend] Dispatching OTP email for ${user.email}...`);
+  const emailResult = await sendOtpEmail(user.email, user.name, otp);
+  console.log(`[OTP Service Resend] Generated OTP for user ${user.email}: ${otp} (Email Delivery Success: ${emailResult?.success})`);
+
+  if (!emailResult?.success) {
+    return {
+      success: false,
+      reason: "Failed to deliver OTP email. Please verify your email configuration or check server logs."
+    };
+  }
 
   return { success: true, message: "An OTP has been sent to your registered email." };
 };
