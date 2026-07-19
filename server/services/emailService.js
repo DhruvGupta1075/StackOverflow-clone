@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
+import dns from "dns";
 
 // Initialize nodemailer transporter
 const getTransporter = async () => {
@@ -12,11 +13,29 @@ const getTransporter = async () => {
       ? process.env.SMTP_SECURE === "true"
       : (port === 465);
 
+    const host = process.env.SMTP_HOST || "smtp.gmail.com";
+    let resolvedHost = host;
+
+    // Force IPv4 resolution for smtp.gmail.com to bypass Render's broken IPv6 outbound routing
+    if (host === "smtp.gmail.com") {
+      try {
+        const ips = await dns.promises.resolve4(host);
+        if (ips && ips.length > 0) {
+          resolvedHost = ips[0];
+          console.log(`[Email Service] Resolved ${host} to IPv4 address: ${resolvedHost}`);
+        }
+      } catch (dnsErr) {
+        console.warn(`[Email Service] DNS IPv4 resolution failed for ${host}:`, dnsErr.message);
+      }
+    }
+
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      host: resolvedHost,
       port: port,
       secure: secure,
-      family: 4, // Force IPv4 to avoid IPv6 routing errors on cloud hosts like Render
+      tls: {
+        servername: host, // Ensure TLS certificate SNI validation passes
+      },
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
