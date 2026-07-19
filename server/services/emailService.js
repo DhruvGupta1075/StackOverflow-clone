@@ -5,10 +5,16 @@ import path from "path";
 // Initialize nodemailer transporter
 const getTransporter = async () => {
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    const port = parseInt(process.env.SMTP_PORT || "587", 10);
+    // If SMTP_SECURE is explicitly set, use it. Otherwise, default to true only for port 465.
+    const secure = process.env.SMTP_SECURE !== undefined
+      ? process.env.SMTP_SECURE === "true"
+      : (port === 465);
+
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.SMTP_PORT || "465", 10),
-      secure: process.env.SMTP_SECURE === "true",
+      port: port,
+      secure: secure,
       family: 4, // Force IPv4 to avoid IPv6 routing errors on cloud hosts like Render
       auth: {
         user: process.env.SMTP_USER,
