@@ -9,6 +9,7 @@ const getTransporter = async () => {
       host: process.env.SMTP_HOST || "smtp.gmail.com",
       port: parseInt(process.env.SMTP_PORT || "465", 10),
       secure: process.env.SMTP_SECURE === "true",
+      family: 4, // Force IPv4 to avoid IPv6 routing errors on cloud hosts like Render
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
