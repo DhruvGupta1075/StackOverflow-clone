@@ -44,7 +44,7 @@ app.use('/payment',paymentroutes)
 app.use('/api/community',communityroutes)
 app.use('/community',communityroutes)
 app.use('/api/security', securityroutes)
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 const databaseurl = process.env.MONGODB_URL;
 
 mongoose
