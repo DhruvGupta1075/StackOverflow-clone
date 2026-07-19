@@ -16,9 +16,9 @@ export const getApproximateLocation = async (ip) => {
   }
 
   try {
-    // Set a timeout of 1.5s to prevent blocking login flows if IP-API is slow
+    // Set a timeout of 500ms to prevent blocking login flows if IP-API is slow
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const timeoutId = setTimeout(() => controller.abort(), 500);
 
     const response = await fetch(`http://ip-api.com/json/${ip}`, {
       signal: controller.signal,
