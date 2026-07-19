@@ -4,6 +4,7 @@ import path from "path";
 
 // Initialize nodemailer transporter
 const getTransporter = async () => {
+  console.log(`[Email Service] Checking SMTP config: SMTP_USER is ${process.env.SMTP_USER ? "Present" : "Missing"}, SMTP_PASS is ${process.env.SMTP_PASS ? "Present" : "Missing"}`);
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     const port = parseInt(process.env.SMTP_PORT || "587", 10);
     // If SMTP_SECURE is explicitly set, use it. Otherwise, default to true only for port 465.
