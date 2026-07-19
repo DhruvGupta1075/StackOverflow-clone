@@ -3,10 +3,14 @@ import user from "../models/auth.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import question from "../models/question.js";
+import { handleUserLogin, establishSession, getClientIp } from "../services/sessionService.js";
 import { generatePassword } from "../utils/passwordGenerator.js";
 import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
+import { parseUserAgent } from "../utils/userAgent.js";
+import { getApproximateLocation } from "../utils/location.js";
+import LoginActivity from "../models/loginActivity.js";
 export const Signup = async (req, res) => {
   const { name, email, password } = req.body;
   try {
@@ -31,13 +35,37 @@ export const Signup = async (req, res) => {
       username,
       role,
     });
-    const token = jwt.sign(
-      { email: newuser.email, id: newuser._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+    const ipAddress = getClientIp(req);
+    const userAgentString = req.headers["user-agent"];
+    const userAgentDetails = parseUserAgent(userAgentString);
+    userAgentDetails.location = await getApproximateLocation(ipAddress);
+
+    const { session, accessToken } = await establishSession(
+      res,
+      newuser,
+      ipAddress,
+      userAgentDetails,
+      "Email/Password",
+      true // Trust this device automatically on signup
     );
-    res.status(200).json({ data: newuser, token });
+
+    // Create login activity log
+    await LoginActivity.create({
+      userId: newuser._id,
+      sessionId: session.sessionId,
+      ipAddress,
+      location: userAgentDetails.location,
+      browser: userAgentDetails.browser,
+      operatingSystem: userAgentDetails.operatingSystem,
+      deviceType: userAgentDetails.deviceType,
+      authenticationMethod: "Email/Password",
+      isNewDevice: false, // first device is trusted
+      status: "Success",
+    });
+
+    res.status(200).json({ data: newuser, token: accessToken });
   } catch (error) {
+    console.error("Error in Signup:", error);
     res.status(500).json("something went wrong..");
     return;
   }
@@ -57,12 +85,8 @@ export const Login = async (req, res) => {
     if (!ispasswordcrct) {
       return res.status(400).json({ message: "Invalid password" });
     }
-    const token = jwt.sign(
-      { email: exisitinguser.email, id: exisitinguser._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-    res.status(200).json({ data: exisitinguser, token });
+    
+    await handleUserLogin(req, res, exisitinguser, "Email/Password");
   } catch (error) {
     res.status(500).json("something went wrong..");
     return;
@@ -254,13 +278,7 @@ export const googleLogin = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      { email: existingUser.email, id: existingUser._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.status(200).json({ data: existingUser, token });
+    await handleUserLogin(req, res, existingUser, "Google");
   } catch (error) {
     console.error("Error in googleLogin:", error);
     res.status(500).json({ message: "Something went wrong during Google Login" });
@@ -353,13 +371,7 @@ export const githubLogin = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      { email: existingUser.email, id: existingUser._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.status(200).json({ data: existingUser, token });
+    await handleUserLogin(req, res, existingUser, "GitHub");
   } catch (error) {
     console.error("Error in githubLogin:", error);
     res.status(500).json({ message: "Something went wrong during GitHub Login" });

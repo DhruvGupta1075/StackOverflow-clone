@@ -3,11 +3,14 @@ import { useRouter } from "next/router";
 import { useAuth } from "@/lib/AuthContext";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
+import SecurityOtpModal from "@/components/SecurityOtpModal";
 
 export default function GitHubCallback() {
   const router = useRouter();
   const { SocialLogin } = useAuth();
   const [status, setStatus] = useState("Authenticating with GitHub...");
+  const [showOtp, setShowOtp] = useState(false);
+  const [tempToken, setTempToken] = useState("");
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -31,8 +34,12 @@ export default function GitHubCallback() {
     const exchangeCode = async () => {
       try {
         setStatus("Exchanging authorization code...");
-        const success = await SocialLogin("github", code as string);
-        if (success) {
+        const res = await SocialLogin("github", code as string);
+        if (res && res.otpRequired) {
+          setTempToken(res.tempToken);
+          setShowOtp(true);
+          setStatus("New device detected. Verification required.");
+        } else if (res && res.success) {
           router.push("/");
         } else {
           router.push("/auth");
@@ -55,6 +62,13 @@ export default function GitHubCallback() {
         <p className="text-sm text-gray-500">{status}</p>
         <p className="text-xs text-gray-400">Please do not close this window.</p>
       </div>
+
+      <SecurityOtpModal
+        isOpen={showOtp}
+        onClose={() => router.push("/auth")}
+        tempToken={tempToken}
+        onSuccess={() => router.push("/")}
+      />
     </div>
   );
 }

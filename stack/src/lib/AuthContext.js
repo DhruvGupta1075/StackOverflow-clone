@@ -46,10 +46,14 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("user", JSON.stringify({ ...data, token }));
       setUser({ ...data, token });
       toast.success("Signup Successful");
+      return { success: true };
     } catch (error) {
-      const msg = error.response?.data.message || "Signup failed";
+      const msg = error.response?.data?.message || error.response?.data?.message || "Signup failed";
       seterror(msg);
       toast.error(msg);
+      return { success: false };
+    } finally {
+      setloading(false);
     }
   };
 
@@ -61,14 +65,23 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
+
+      if (res.data.status === "OTP_REQUIRED") {
+        return { otpRequired: true, tempToken: res.data.tempToken };
+      }
+
       const { data, token } = res.data;
       localStorage.setItem("user", JSON.stringify({ ...data, token }));
       setUser({ ...data, token });
       toast.success("Login Successful");
+      return { success: true };
     } catch (error) {
-      const msg = error.response?.data.message || "Login failed";
+      const msg = error.response?.data?.message || "Login failed";
       seterror(msg);
       toast.error(msg);
+      return { success: false, error: msg };
+    } finally {
+      setloading(false);
     }
   };
 
@@ -80,25 +93,74 @@ export const AuthProvider = ({ children }) => {
       const payload = provider === "google" ? { accessToken: tokenOrCode } : { code: tokenOrCode };
       
       const res = await axiosInstance.post(endpoint, payload);
+
+      if (res.data.status === "OTP_REQUIRED") {
+        return { otpRequired: true, tempToken: res.data.tempToken };
+      }
+      
       const { data, token } = res.data;
       localStorage.setItem("user", JSON.stringify({ ...data, token }));
       setUser({ ...data, token });
       toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Login Successful`);
-      return true;
+      return { success: true };
     } catch (error) {
       const msg = error.response?.data?.message || `${provider} Login failed`;
       seterror(msg);
       toast.error(msg);
-      return false;
+      return { success: false };
     } finally {
       setloading(false);
     }
   };
 
-  const Logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-    toast.info("Logged out");
+  const VerifyOtp = async (tempToken, otpCode, trustDevice) => {
+    setloading(true);
+    seterror(null);
+    try {
+      const res = await axiosInstance.post("/user/device/verify-otp", {
+        tempToken,
+        otpCode,
+        trustDevice,
+      });
+      const { data, token } = res.data;
+      localStorage.setItem("user", JSON.stringify({ ...data, token }));
+      setUser({ ...data, token });
+      toast.success("Login Successful");
+      return { success: true };
+    } catch (error) {
+      const msg = error.response?.data?.message || "OTP verification failed";
+      seterror(msg);
+      toast.error(msg);
+      return { success: false, message: msg };
+    } finally {
+      setloading(false);
+    }
+  };
+
+  const ResendOtp = async (tempToken) => {
+    try {
+      const res = await axiosInstance.post("/user/device/resend-otp", {
+        tempToken,
+      });
+      toast.success(res.data.message || "OTP resent successfully");
+      return { success: true };
+    } catch (error) {
+      const msg = error.response?.data?.message || "Failed to resend OTP";
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const Logout = async () => {
+    try {
+      await axiosInstance.post("/api/security/logout");
+    } catch (err) {
+      console.warn("Failed to logout from backend:", err);
+    } finally {
+      setUser(null);
+      localStorage.removeItem("user");
+      toast.info("Logged out");
+    }
   };
 
   const updateUser = (updatedUserData) => {
@@ -123,7 +185,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, Signup, Login, Logout, SocialLogin, loading, error, updateUser }}
+      value={{ user, Signup, Login, Logout, SocialLogin, VerifyOtp, ResendOtp, loading, error, updateUser }}
     >
       {children}
     </AuthContext.Provider>

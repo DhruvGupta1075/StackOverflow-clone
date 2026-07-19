@@ -13,11 +13,14 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import SecurityOtpModal from "@/components/SecurityOtpModal";
 
 const Index = () => {
   const router = useRouter();
   const { Login, SocialLogin, loading } = useAuth();
   const [form, setform] = useState({ email: "", password: "" });
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [tempToken, setTempToken] = useState("");
 
   useEffect(() => {
     // Load Google GIS SDK script dynamically
@@ -43,8 +46,13 @@ const Index = () => {
       return;
     }
     try {
-      await Login(form);
-      router.push("/");
+      const res = await Login(form);
+      if (res && res.otpRequired) {
+        setTempToken(res.tempToken);
+        setShowOtpModal(true);
+      } else if (res && res.success) {
+        router.push("/");
+      }
     } catch (error) {
       console.log(error);
     }
@@ -62,8 +70,11 @@ const Index = () => {
         scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
         callback: async (tokenResponse: any) => {
           if (tokenResponse && tokenResponse.access_token) {
-            const success = await SocialLogin("google", tokenResponse.access_token);
-            if (success) {
+            const res = await SocialLogin("google", tokenResponse.access_token);
+            if (res && res.otpRequired) {
+              setTempToken(res.tempToken);
+              setShowOtpModal(true);
+            } else if (res && res.success) {
               router.push("/");
             }
           } else {
@@ -210,6 +221,12 @@ const Index = () => {
             </CardContent>
           </Card>
         </form>
+        <SecurityOtpModal
+          isOpen={showOtpModal}
+          onClose={() => setShowOtpModal(false)}
+          tempToken={tempToken}
+          onSuccess={() => router.push("/")}
+        />
       </div>
     </div>
   );

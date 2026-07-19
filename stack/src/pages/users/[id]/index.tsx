@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Mainlayout from "@/layout/Mainlayout";
 import { useAuth } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
-import { Calendar, Edit, Plus, X, Award, Star, Sparkles, Lock, CreditCard, Download, Send, Bookmark as BookmarkIcon, Loader2 } from "lucide-react";
+import { Calendar, Edit, Plus, X, Award, Star, Sparkles, Lock, CreditCard, Download, Send, Bookmark as BookmarkIcon, Loader2, Monitor, Smartphone, Tablet, Globe, Shield, ShieldAlert, History, Key, CheckCircle, AlertTriangle, AlertCircle, Trash2, Power, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
@@ -58,6 +58,41 @@ const index = () => {
   const [newTag, setNewTag] = useState("");
 
   const [activeTab, setActiveTab] = useState("profile");
+  
+  // Security management states
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [trustedDevices, setTrustedDevices] = useState<any[]>([]);
+  const [loginHistory, setLoginHistory] = useState<any[]>([]);
+  const [loadingSecurity, setLoadingSecurity] = useState(false);
+
+  const [confirmRevokeSessionId, setConfirmRevokeSessionId] = useState<string | null>(null);
+  const [confirmRevokeAllOthers, setConfirmRevokeAllOthers] = useState(false);
+  const [confirmRemoveDeviceId, setConfirmRemoveDeviceId] = useState<string | null>(null);
+
+  const fetchSecurityData = async () => {
+    setLoadingSecurity(true);
+    try {
+      const [sessionsRes, devicesRes, historyRes] = await Promise.all([
+        axiosInstance.get("/api/security/sessions"),
+        axiosInstance.get("/api/security/trusted-devices"),
+        axiosInstance.get("/api/security/login-activity"),
+      ]);
+      setSessions(sessionsRes.data.data);
+      setTrustedDevices(devicesRes.data.data);
+      setLoginHistory(historyRes.data.data);
+    } catch (err) {
+      console.error("Failed to load security details:", err);
+      toast.error("Failed to load security details");
+    } finally {
+      setLoadingSecurity(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "security") {
+      fetchSecurityData();
+    }
+  }, [activeTab]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
   const [billingForm, setBillingForm] = useState({
@@ -459,6 +494,16 @@ const index = () => {
               Gold Lounge 👑
             </button>
           )}
+          {isOwnProfile && (
+            <button
+              onClick={() => setActiveTab("security")}
+              className={`pb-3 px-4 font-semibold text-sm border-b-2 transition ${
+                activeTab === "security" ? "border-orange-500 text-orange-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Security 🔒
+            </button>
+          )}
         </div>
 
         {/* Tab Content Panels */}
@@ -752,6 +797,283 @@ const index = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {activeTab === "security" && isOwnProfile && (
+          <div className="space-y-6">
+            {/* Active Sessions */}
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+                <CardTitle className="text-lg text-gray-800 flex items-center gap-2 font-bold">
+                  <Monitor className="w-5 h-5 text-blue-600" /> Active Sessions
+                </CardTitle>
+                {sessions.filter(s => !s.isCurrent).length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setConfirmRevokeAllOthers(true)}
+                    className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Power className="w-3.5 h-3.5" /> Revoke Other Sessions
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                {loadingSecurity ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                  </div>
+                ) : sessions.length > 0 ? (
+                  sessions.map((session) => (
+                    <div
+                      key={session.sessionId}
+                      className="p-4 border border-gray-100 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg mt-1">
+                          {session.deviceType === "Mobile" ? <Smartphone className="w-5 h-5" /> :
+                           session.deviceType === "Tablet" ? <Tablet className="w-5 h-5" /> :
+                           <Monitor className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 flex flex-wrap items-center gap-2">
+                            {session.browser} on {session.operatingSystem}
+                            {session.isCurrent && (
+                              <Badge className="bg-blue-100 text-blue-800 border border-blue-200 text-xs font-semibold py-0.5 px-2 rounded-full">
+                                Current Device
+                              </Badge>
+                            )}
+                            {session.isTrusted && (
+                              <Badge className="bg-green-100 text-green-800 border border-green-200 text-xs font-semibold py-0.5 px-2 rounded-full">
+                                Trusted Device
+                              </Badge>
+                            )}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                            <Globe className="w-3.5 h-3.5 text-gray-400" /> {session.location} &bull; IP: {session.ipAddress} &bull; Method: {session.authenticationMethod}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Created: {new Date(session.createdAt).toLocaleString()} &bull; Active: {new Date(session.lastActiveAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      {!session.isCurrent && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setConfirmRevokeSessionId(session.sessionId)}
+                          className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 bg-transparent flex items-center gap-1 cursor-pointer"
+                        >
+                          Revoke Session
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 py-6 text-sm">No active sessions found.</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Trusted Devices */}
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="border-b pb-4">
+                <CardTitle className="text-lg text-gray-800 flex items-center gap-2 font-bold">
+                  <ShieldCheck className="w-5 h-5 text-green-600" /> Trusted Devices
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                {loadingSecurity ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                  </div>
+                ) : trustedDevices.length > 0 ? (
+                  trustedDevices.map((device) => (
+                    <div
+                      key={device.deviceId}
+                      className="p-4 border border-gray-100 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-green-50 text-green-600 rounded-lg mt-1">
+                          {device.deviceType === "Mobile" ? <Smartphone className="w-5 h-5" /> :
+                           device.deviceType === "Tablet" ? <Tablet className="w-5 h-5" /> :
+                           <Monitor className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{device.deviceName}</h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            OS: {device.operatingSystem} &bull; Browser: {device.browser}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Trusted since: {new Date(device.createdAt).toLocaleString()} &bull; Last used: {new Date(device.lastUsedAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setConfirmRemoveDeviceId(device.deviceId)}
+                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 bg-transparent flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remove Trust
+                      </Button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 py-6 text-sm">
+                    No trusted devices registered. Check "Trust this device" when verifying login OTP.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Login History */}
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="border-b pb-4">
+                <CardTitle className="text-lg text-gray-800 flex items-center gap-2 font-bold">
+                  <History className="w-5 h-5 text-purple-600" /> Recent Login History
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4">
+                {loadingSecurity ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                  </div>
+                ) : loginHistory.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b text-gray-600 font-semibold text-sm">
+                          <th className="py-3 px-4">Date & Time</th>
+                          <th className="py-3 px-4">Browser / OS</th>
+                          <th className="py-3 px-4">IP Address</th>
+                          <th className="py-3 px-4">Location</th>
+                          <th className="py-3 px-4">Method</th>
+                          <th className="py-3 px-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loginHistory.map((log) => (
+                          <tr key={log._id} className="border-b hover:bg-gray-50/50 text-sm">
+                            <td className="py-3 px-4 text-gray-900 font-medium">
+                              {new Date(log.timestamp).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 text-gray-700">
+                              {log.browser} on {log.operatingSystem} ({log.deviceType})
+                            </td>
+                            <td className="py-3 px-4 text-gray-600 font-mono">{log.ipAddress}</td>
+                            <td className="py-3 px-4 text-gray-600">{log.location}</td>
+                            <td className="py-3 px-4 font-semibold text-blue-600">{log.authenticationMethod}</td>
+                            <td className="py-3 px-4">
+                              <span
+                                className={`inline-block border px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                  log.status === "Success"
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : log.status === "OTP_Required"
+                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                    : "bg-red-50 text-red-700 border-red-200"
+                                }`}
+                              >
+                                {log.status === "OTP_Required" ? "OTP Verification Sent" : log.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-6 text-sm">No login attempts recorded yet.</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Dialog Confirmations */}
+            <Dialog open={!!confirmRevokeSessionId} onOpenChange={(open) => !open && setConfirmRevokeSessionId(null)}>
+              <DialogContent className="bg-white text-gray-900">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-red-600 font-bold">
+                    <AlertTriangle className="w-5 h-5" /> Revoke Authentication Session?
+                  </DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to revoke this session? The device will be signed out immediately and cannot access your account until logging back in.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-3 mt-4 border-t pt-4">
+                  <Button variant="outline" onClick={() => setConfirmRevokeSessionId(null)} className="bg-white border-gray-300 text-gray-700">Cancel</Button>
+                  <Button variant="destructive" onClick={async () => {
+                    if (confirmRevokeSessionId) {
+                      try {
+                        await axiosInstance.delete(`/api/security/sessions/${confirmRevokeSessionId}`);
+                        toast.success("Session revoked successfully.");
+                        fetchSecurityData();
+                      } catch (err) {
+                        toast.error("Failed to revoke session");
+                      } finally {
+                        setConfirmRevokeSessionId(null);
+                      }
+                    }
+                  }} className="bg-red-600 text-white">Confirm Revoke</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={confirmRevokeAllOthers} onOpenChange={setConfirmRevokeAllOthers}>
+              <DialogContent className="bg-white text-gray-900">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-red-600 font-bold">
+                    <AlertTriangle className="w-5 h-5" /> Revoke All Other Sessions?
+                  </DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to revoke all other active sessions? All other devices will be forced out of their accounts immediately. Your current session will remain active.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-3 mt-4 border-t pt-4">
+                  <Button variant="outline" onClick={() => setConfirmRevokeAllOthers(false)} className="bg-white border-gray-300 text-gray-700">Cancel</Button>
+                  <Button variant="destructive" onClick={async () => {
+                    try {
+                      await axiosInstance.delete("/api/security/sessions");
+                      toast.success("All other sessions revoked successfully.");
+                      fetchSecurityData();
+                    } catch (err) {
+                      toast.error("Failed to revoke other sessions");
+                    } finally {
+                      setConfirmRevokeAllOthers(false);
+                    }
+                  }} className="bg-red-600 text-white">Revoke All Others</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!confirmRemoveDeviceId} onOpenChange={(open) => !open && setConfirmRemoveDeviceId(null)}>
+              <DialogContent className="bg-white text-gray-900">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-red-600 font-bold">
+                    <AlertTriangle className="w-5 h-5" /> Remove Device Trust?
+                  </DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to remove trust from this device? On your next login attempt from this device, you will be required to verify your identity via email OTP again.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-3 mt-4 border-t pt-4">
+                  <Button variant="outline" onClick={() => setConfirmRemoveDeviceId(null)} className="bg-white border-gray-300 text-gray-700">Cancel</Button>
+                  <Button variant="destructive" onClick={async () => {
+                    if (confirmRemoveDeviceId) {
+                      try {
+                        await axiosInstance.delete(`/api/security/trusted-devices/${confirmRemoveDeviceId}`);
+                        toast.success("Device trust removed successfully.");
+                        fetchSecurityData();
+                      } catch (err) {
+                        toast.error("Failed to remove trusted device");
+                      } finally {
+                        setConfirmRemoveDeviceId(null);
+                      }
+                    }
+                  }} className="bg-red-600 text-white">Confirm Remove</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         )}
       </div>
     </Mainlayout>
