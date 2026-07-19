@@ -68,8 +68,8 @@ export const verifyOtp = async (req, res) => {
       status: "Success",
     });
 
-    // Send email alert for new device login
-    await sendNewDeviceAlertEmail(matchedUser.email, matchedUser.name, {
+    // Send email alert for new device login (asynchronously in the background)
+    sendNewDeviceAlertEmail(matchedUser.email, matchedUser.name, {
       browser: userAgentDetails.browser,
       operatingSystem: userAgentDetails.operatingSystem,
       deviceType: userAgentDetails.deviceType,

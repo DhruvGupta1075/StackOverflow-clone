@@ -31,8 +31,8 @@ export const createAndSendOtp = async (user) => {
     lastSentAt: new Date(),
   });
 
-  // Send OTP via email service
-  await sendOtpEmail(user.email, user.name, otp);
+  // Send OTP via email service (asynchronously in the background)
+  sendOtpEmail(user.email, user.name, otp);
 
   // Return the OTP in console for easy debugging if SMTP fails
   console.log(`[OTP Service] Generated OTP for user ${user.email}: ${otp}`);
@@ -115,7 +115,7 @@ export const resendOtpCode = async (user) => {
   verification.lastSentAt = now;
   await verification.save();
 
-  await sendOtpEmail(user.email, user.name, otp);
+  sendOtpEmail(user.email, user.name, otp);
   console.log(`[OTP Service Resend] Generated OTP for user ${user.email}: ${otp}`);
 
   return { success: true, message: "An OTP has been sent to your registered email." };
