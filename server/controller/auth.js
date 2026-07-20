@@ -9,6 +9,7 @@ import { sendForgotPasswordEmail } from "../services/emailService.js";
 import { parseUserAgent } from "../utils/userAgent.js";
 import { getApproximateLocation } from "../utils/location.js";
 import LoginActivity from "../models/loginActivity.js";
+import { modifyReputation } from "../services/reputationService.js";
 export const Signup = async (req, res) => {
   const { name, email, password } = req.body;
   try {
@@ -117,6 +118,30 @@ export const updateprofile = async (req, res) => {
       { $set: updateFields },
       { new: true }
     );
+
+    // Profile Completion Reward check (+10 Reputation)
+    if (
+      updatedProfile &&
+      !updatedProfile.profileCompletedRewardClaimed &&
+      updatedProfile.name &&
+      updatedProfile.about &&
+      updatedProfile.about.trim().length > 5 &&
+      updatedProfile.tags &&
+      updatedProfile.tags.length > 0
+    ) {
+      updatedProfile.profileCompletedRewardClaimed = true;
+      await updatedProfile.save();
+
+      await modifyReputation({
+        userId: _id,
+        actionType: "Profile Completed",
+        points: 10,
+        referenceId: String(_id),
+        referenceType: "Profile",
+        description: "Completed user profile (+10 reputation)"
+      });
+    }
+
     res.status(200).json({ data: updatedProfile });
   } catch (error) {
     console.log(error);

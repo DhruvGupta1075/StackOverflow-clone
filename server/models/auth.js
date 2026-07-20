@@ -54,6 +54,23 @@ const userschema = mongoose.Schema({
   lastOtpSent: { type: Date, default: null },
   otpType: { type: String, default: null },
   languageVerificationStatus: { type: String, default: "verified" },
-  languageVerificationLockUntil: { type: Date, default: null }
+  languageVerificationLockUntil: { type: Date, default: null },
+  reputation: { type: Number, default: 0 },
+  profileCompletedRewardClaimed: { type: Boolean, default: false },
+  dailyTransferredToday: { type: Number, default: 0 },
+  dailyTransferDate: { type: Date, default: null },
+  unlockedPrivileges: { type: [String], default: [] },
+  suspendTransfer: { type: Boolean, default: false },
+  badges: {
+    type: [
+      {
+        name: { type: String, required: true },
+        icon: { type: String, default: "trophy" },
+        description: { type: String, default: "" },
+        awardedAt: { type: Date, default: Date.now }
+      }
+    ],
+    default: []
+  }
 });
 export default mongoose.model("user", userschema);

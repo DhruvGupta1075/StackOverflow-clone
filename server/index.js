@@ -9,6 +9,8 @@ import paymentroutes from "./routes/payment.js"
 import communityroutes from "./routes/community.js"
 import languageroutes from "./routes/language.js"
 import securityroutes from "./routes/security.js"
+import reputationroutes from "./routes/reputation.js"
+import adminreputationroutes from "./routes/adminReputation.js"
 const app = express();
 app.use(express.json({ limit: "30mb", extended: true }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
@@ -44,6 +46,8 @@ app.use('/payment',paymentroutes)
 app.use('/api/community',communityroutes)
 app.use('/community',communityroutes)
 app.use('/api/security', securityroutes)
+app.use('/api/reputation', reputationroutes)
+app.use('/api/admin/reputation', adminreputationroutes)
 const PORT = process.env.PORT || 10000;
 const databaseurl = process.env.MONGODB_URL;
 

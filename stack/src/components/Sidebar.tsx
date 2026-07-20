@@ -140,12 +140,12 @@ const Sidebar = ({ isopen, onClose }: { isopen: boolean; onClose?: () => void })
 
             <li>
               <Link
-                href="#"
+                href="/leaderboard"
                 onClick={handleNavClick}
-                className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm"
+                className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-100 rounded text-sm font-medium"
               >
-                <Trophy className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0" />
-                {t("sidebar.challenges", "Challenges")}
+                <Trophy className="w-4 h-4 mr-2 lg:mr-3 flex-shrink-0 text-orange-500" />
+                Leaderboard
                 <Badge
                   variant="secondary"
                   className="ml-auto text-xs bg-orange-100 text-orange-800"

@@ -16,12 +16,14 @@ import { Textarea } from "@/components/ui/textarea";
 import Mainlayout from "@/layout/Mainlayout";
 import { useAuth } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
-import { Calendar, Edit, Plus, X, Award, Star, Sparkles, Lock, CreditCard, Download, Send, Bookmark as BookmarkIcon, Loader2, Monitor, Smartphone, Tablet, Globe, Shield, ShieldAlert, History, Key, CheckCircle, AlertTriangle, AlertCircle, Trash2, Power, ShieldCheck } from "lucide-react";
+import { Calendar, Edit, Plus, X, Award, Star, Sparkles, Lock, CreditCard, Download, Send, Bookmark as BookmarkIcon, Loader2, Monitor, Smartphone, Tablet, Globe, Shield, ShieldAlert, History, Key, CheckCircle, AlertTriangle, AlertCircle, Trash2, Power, ShieldCheck, Trophy, TrendingUp, TrendingDown, ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useTranslation } from "@/lib/useTranslationSafe";
+import { ReputationTransferModal } from "@/components/ReputationTransferModal";
+import { ReputationPrivilegeNotice } from "@/components/ReputationPrivilegeNotice";
 const getUserData = (id: string) => {
   const users = {
     "1": {
@@ -88,11 +90,42 @@ const index = () => {
     }
   };
 
+  // Reputation management states
+  const [reputationData, setReputationData] = useState<any>(null);
+  const [loadingReputation, setLoadingReputation] = useState(false);
+  const [reputationHistoryList, setReputationHistoryList] = useState<any[]>([]);
+  const [transferHistoryList, setTransferHistoryList] = useState<any[]>([]);
+  const [transferFilter, setTransferFilter] = useState<"all" | "incoming" | "outgoing">("all");
+  const [transferSearch, setTransferSearch] = useState("");
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+  const fetchReputationDetails = async () => {
+    if (!id) return;
+    setLoadingReputation(true);
+    try {
+      const [repRes, histRes, transRes] = await Promise.all([
+        axiosInstance.get(`/api/reputation?userId=${id}`),
+        axiosInstance.get(`/api/reputation/history?userId=${id}`),
+        axiosInstance.get(`/api/reputation/transfers?filter=${transferFilter}&search=${transferSearch}`),
+      ]);
+      setReputationData(repRes.data?.data || null);
+      setReputationHistoryList(histRes.data?.history || []);
+      setTransferHistoryList(transRes.data?.transfers || []);
+    } catch (err) {
+      console.error("Failed to load reputation details:", err);
+    } finally {
+      setLoadingReputation(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "security") {
       fetchSecurityData();
     }
-  }, [activeTab]);
+    if (activeTab === "reputation") {
+      fetchReputationDetails();
+    }
+  }, [activeTab, id, transferFilter, transferSearch]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
   const [billingForm, setBillingForm] = useState({
@@ -494,6 +527,14 @@ const index = () => {
               Gold Lounge 👑
             </button>
           )}
+          <button
+            onClick={() => setActiveTab("reputation")}
+            className={`pb-3 px-4 font-semibold text-sm border-b-2 transition ${
+              activeTab === "reputation" ? "border-orange-500 text-orange-600" : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Reputation & Rewards 🏆
+          </button>
           {isOwnProfile && (
             <button
               onClick={() => setActiveTab("security")}
@@ -1075,6 +1116,219 @@ const index = () => {
             </Dialog>
           </div>
         )}
+
+        {/* Reputation Tab Panel */}
+        {activeTab === "reputation" && (
+          <div className="space-y-6">
+            {/* Reputation Overview Card */}
+            <Card className="border-orange-200 bg-gradient-to-r from-orange-50/40 via-white to-orange-50/20">
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-orange-500 text-white rounded-xl shadow-md">
+                      <Trophy className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-3xl font-black text-gray-900">
+                          {reputationData?.reputation || users.reputation || 0} pts
+                        </h2>
+                        <Badge className="bg-orange-600 text-white text-xs font-bold uppercase tracking-wider">
+                          Rank: {reputationData?.rank || "Novice"}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        Total earned reputation points across Q&A contributions, community answers, and accepted solutions.
+                      </p>
+                    </div>
+                  </div>
+
+                  {isOwnProfile && (
+                    <Button
+                      onClick={() => setIsTransferModalOpen(true)}
+                      className="bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-1.5 shadow"
+                    >
+                      <Send className="w-4 h-4" /> Transfer Reputation
+                    </Button>
+                  )}
+                </div>
+
+                {/* Lifetime Stats & Progress Bar */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4 text-xs font-medium">
+                  <div className="flex items-center justify-between p-2.5 bg-green-50 rounded-lg border border-green-200">
+                    <span className="text-green-800 flex items-center gap-1 font-semibold">
+                      <TrendingUp className="w-4 h-4" /> Lifetime Earned:
+                    </span>
+                    <span className="font-extrabold text-green-900 text-sm">+{reputationData?.lifetimeEarned || 0} pts</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 bg-red-50 rounded-lg border border-red-200">
+                    <span className="text-red-800 flex items-center gap-1 font-semibold">
+                      <TrendingDown className="w-4 h-4" /> Lifetime Lost:
+                    </span>
+                    <span className="font-extrabold text-red-900 text-sm">-{reputationData?.lifetimeLost || 0} pts</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 bg-blue-50 rounded-lg border border-blue-200">
+                    <span className="text-blue-800 flex items-center gap-1 font-semibold">
+                      <CheckCircle className="w-4 h-4" /> Profile Completion:
+                    </span>
+                    <span className="font-bold text-blue-900">
+                      {reputationData?.isProfileComplete ? "Complete (+10 pts claimed)" : "Incomplete (Fill bio & tags)"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Bar to Next Rank Milestone */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex justify-between text-xs font-semibold text-gray-700">
+                    <span>Progress to Next Rank Milestone ({reputationData?.nextMilestone || 50} pts)</span>
+                    <span>{reputationData?.progressBarPercent || 0}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-orange-500 h-full transition-all duration-500 rounded-full"
+                      style={{ width: `${reputationData?.progressBarPercent || 0}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Privilege Notice */}
+            <ReputationPrivilegeNotice
+              currentReputation={reputationData?.reputation || users.reputation || 0}
+              communityRank={reputationData?.rank || "Novice"}
+            />
+
+            {/* Earned Badges Grid */}
+            <Card>
+              <CardHeader className="py-4">
+                <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-500" /> Earned Badges & Achievements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {reputationData?.badges && reputationData.badges.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {reputationData.badges.map((b: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg text-center space-y-1 shadow-sm hover:shadow transition"
+                      >
+                        <span className="text-2xl block">🏆</span>
+                        <p className="font-bold text-xs text-amber-900">{b.name}</p>
+                        <p className="text-[11px] text-amber-700 leading-tight">{b.description}</p>
+                        <span className="text-[10px] text-gray-400 block pt-1">
+                          {new Date(b.awardedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-6 text-xs">
+                    No badges earned yet. Complete answers, reach reputation milestones, and help peers to unlock badges!
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Activity History & Transfer History Split Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Activity History Timeline */}
+              <Card>
+                <CardHeader className="py-4">
+                  <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <History className="w-5 h-5 text-blue-600" /> Recent Reputation Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {reputationHistoryList.length > 0 ? (
+                    <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                      {reputationHistoryList.map((h: any) => (
+                        <div key={h._id} className="p-3 hover:bg-gray-50 flex items-center justify-between text-xs">
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-gray-900 block">{h.actionType}</span>
+                            <span className="text-gray-500 text-[11px] block">{h.description}</span>
+                            <span className="text-gray-400 text-[10px]">{new Date(h.timestamp).toLocaleString()}</span>
+                          </div>
+                          <span
+                            className={`font-black text-sm px-2 py-0.5 rounded ${
+                              h.points > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {h.points > 0 ? `+${h.points}` : h.points}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-gray-500 text-xs">No activity recorded yet.</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Transfer History Card */}
+              <Card>
+                <CardHeader className="py-4 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <ArrowLeftRight className="w-5 h-5 text-orange-600" /> Transfer History
+                  </CardTitle>
+                  <div className="flex gap-1 text-[11px]">
+                    {["all", "incoming", "outgoing"].map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setTransferFilter(f as any)}
+                        className={`px-2 py-1 rounded capitalize ${
+                          transferFilter === f ? "bg-orange-500 text-white font-bold" : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {transferHistoryList.length > 0 ? (
+                    <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                      {transferHistoryList.map((t: any) => (
+                        <div key={t._id} className="p-3 hover:bg-gray-50 space-y-1 text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-gray-900">
+                              {t.senderId?._id === id ? `Sent to @${t.receiverId?.name}` : `Received from @${t.senderId?.name}`}
+                            </span>
+                            <span
+                              className={`font-black text-xs px-2 py-0.5 rounded ${
+                                t.senderId?._id === id ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                              }`}
+                            >
+                              {t.senderId?._id === id ? `-${t.amount} pts` : `+${t.amount} pts`}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-[11px] italic">"{t.reason}"</p>
+                          <div className="flex justify-between text-[10px] text-gray-400">
+                            <span>TX: {t.transactionId}</span>
+                            <span>{new Date(t.timestamp).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-gray-500 text-xs">No transfer history found.</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Reputation Transfer Modal Trigger */}
+        <ReputationTransferModal
+          isOpen={isTransferModalOpen}
+          onClose={() => setIsTransferModalOpen(false)}
+          currentUserReputation={reputationData?.reputation || users.reputation || 0}
+          onSuccess={() => fetchReputationDetails()}
+        />
       </div>
     </Mainlayout>
   );

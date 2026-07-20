@@ -106,7 +106,7 @@ const Index = () => {
               </div>
             </div>
             <span className="text-lg lg:text-xl font-bold text-gray-800">
-              stack<span className="font-normal">overflow</span>
+              Code<span className="font-normal">Quest</span>
             </span>
           </Link>
         </div>

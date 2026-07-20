@@ -4,6 +4,7 @@ import {
   deletequestion,
   getallquestion,
   votequestion,
+  voteAnswer,
 } from "../controller/question.js";
 
 const router = express.Router();
@@ -13,5 +14,6 @@ router.post("/ask", auth, checkLimit, Askquestion);
 router.get("/getallquestion", getallquestion);
 router.delete("/delete/:id", auth, deletequestion);
 router.patch("/vote/:id", auth, votequestion);
+router.patch("/voteanswer/:questionId/:answerId", auth, voteAnswer);
 
 export default router;

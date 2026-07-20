@@ -6,6 +6,7 @@ import Follow from "../models/follow.js";
 import Bookmark from "../models/bookmark.js";
 import Notification from "../models/notification.js";
 import Report from "../models/report.js";
+import { modifyReputation } from "../services/reputationService.js";
 
 // Helper to extract hashtags from text
 const extractHashtags = (text) => {
@@ -91,6 +92,18 @@ export const deletePost = async (req, res) => {
 
     if (post.user.toString() !== req.userid && !isAdmin) {
       return res.status(403).json({ message: "Unauthorized to delete this post" });
+    }
+
+    if (isAdmin && post.user.toString() !== req.userid) {
+      // Deduct -10 reputation for Admin Removal
+      await modifyReputation({
+        userId: post.user,
+        actionType: "Admin Removed Content",
+        points: -10,
+        referenceId: String(id),
+        referenceType: "CommunityPost",
+        description: "Administrator removed post for guideline violation (-10 reputation)"
+      });
     }
 
     await Post.findByIdAndDelete(id);

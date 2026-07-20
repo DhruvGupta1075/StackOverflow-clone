@@ -17,9 +17,16 @@ const questionschema = mongoose.Schema(
         useranswered: String,
         userid: String,
         answeredon: { type: Date, default: Date.now },
+        upvote: { type: [String], default: [] },
+        downvote: { type: [String], default: [] },
+        isAccepted: { type: Boolean, default: false },
       },
     ],
+    isClosed: { type: Boolean, default: false },
+    closeVotes: { type: [String], default: [] },
+    closedReason: { type: String, default: "" },
+    closedAt: { type: Date },
   },
-  { timestamp: true }
+  { timestamps: true }
 );
 export default mongoose.model("question", questionschema);
