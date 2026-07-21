@@ -6,32 +6,6 @@ import axiosInstance from "@/lib/axiosinstance";
 import { Calendar, Search, Star } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-const users = [
-  {
-    id: 1,
-    name: "John Doe",
-    username: "johndoe",
-    joinDate: "2019-03-15",
-  },
-  {
-    id: 2,
-    name: "Felix Rodriguez",
-    username: "Felix.leg",
-    joinDate: "2020-07-22",
-  },
-  {
-    id: 3,
-    name: "Alex Smith",
-    username: "Aledi5",
-    joinDate: "2023-11-10",
-  },
-  {
-    id: 4,
-    name: "Sarah Johnson",
-    username: "PR0X",
-    joinDate: "2024-01-05",
-  },
-];
 const index = () => {
   const [users, setusers] = useState<any>(null);
   const [loading, setloading] = useState(true);

@@ -24,26 +24,6 @@ import { toast } from "react-toastify";
 import { useTranslation } from "@/lib/useTranslationSafe";
 import { ReputationTransferModal } from "@/components/ReputationTransferModal";
 import { ReputationPrivilegeNotice } from "@/components/ReputationPrivilegeNotice";
-const getUserData = (id: string) => {
-  const users = {
-    "1": {
-      id: 1,
-      name: "John Doe",
-      joinDate: "2019-03-15",
-      about:
-        "Full-stack developer with 8+ years of experience in JavaScript, React, and Node.js. Passionate about clean code and helping others learn programming. I enjoy working on open-source projects and contributing to the developer community.",
-      tags: [
-        "javascript",
-        "react",
-        "node.js",
-        "typescript",
-        "python",
-        "mongodb",
-      ],
-    },
-  };
-  return users[id as keyof typeof users] || users["1"];
-};
 const index = () => {
   const { user } = useAuth();
   const router = useRouter();

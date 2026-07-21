@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
       toast.success("Signup Successful");
       return { success: true };
     } catch (error) {
-      const msg = error.response?.data?.message || error.response?.data?.message || "Signup failed";
+      const msg = error.response?.data?.message || "Signup failed";
       seterror(msg);
       toast.error(msg);
       return { success: false };
@@ -164,20 +164,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (updatedUserData) => {
-    console.log("[updateUser] Input updatedUserData:", updatedUserData);
     setUser((prevUser) => {
-      console.log("[updateUser] prevUser in state:", prevUser);
-      if (!prevUser) {
-        console.warn("[updateUser] prevUser is null!");
-        return null;
-      }
+      if (!prevUser) return null;
       const token = prevUser.token || (typeof window !== "undefined" && JSON.parse(localStorage.getItem("user") || "{}").token);
-      console.log("[updateUser] resolved token:", token);
       const newUser = { ...prevUser, ...updatedUserData };
       if (token) {
         newUser.token = token;
       }
-      console.log("[updateUser] newUser to store:", newUser);
       localStorage.setItem("user", JSON.stringify(newUser));
       return newUser;
     });

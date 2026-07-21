@@ -12,7 +12,7 @@ import securityroutes from "./routes/security.js"
 import reputationroutes from "./routes/reputation.js"
 import adminreputationroutes from "./routes/adminReputation.js"
 const app = express();
-app.use(express.json({ limit: "30mb", extended: true }));
+app.use(express.json({ limit: "30mb" }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
